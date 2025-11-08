@@ -1,0 +1,11 @@
+numpy
+pandas
+geopy
+timezonefinder
+astropy
+astroquery
+setuptools
+wheel
+PyQt6
+PyQt6-WebEngine
+
