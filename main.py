@@ -179,7 +179,7 @@ class MainWindow(QMainWindow):
         label_tdelta = QLabel('Time step [min]')
         tdelta.addWidget(label_tdelta)
         self.tdelta = QSpinBox()
-        self.tdelta.setRange(1, 30)
+        self.tdelta.setRange(1, 15)
         self.tdelta.setSingleStep(1)  # increment/decrement by 5
         self.tdelta.setValue(5)
         tdelta.addWidget(self.tdelta)

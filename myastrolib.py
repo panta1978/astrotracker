@@ -90,7 +90,7 @@ def get_coords(
         sel_ssbodies,
         sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec,
         loc_name, lats, lons, tz_names, sel_time,
-        sel_days, step_min
+        sel_days, t_delta
 ):
 
     df_s = [] # Init output structure
@@ -114,7 +114,7 @@ def get_coords(
         t_current_s = [pd.date_range(
             start=f'{sel_day} 00:00',
             end=f'{pd.to_datetime(sel_day) + pd.Timedelta(days=1):%Y-%m-%d} 00:00',
-            freq=f'{step_min}min',
+            freq=f'{t_delta}min',
             tz=curr_tz,
             nonexistent='shift_forward'
         ) for sel_day in sel_days]

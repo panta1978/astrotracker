@@ -96,15 +96,23 @@ def update_plot(self):
 
     # Time info
     sel_days = [curr_day]
-    step_min = 5 # minutes
 
     # Get Data
     self.df_out = myal.get_coords(
-        sel_ssbodies,
-        sel_stars, sel_stars_ra0, sel_stars_dec0, sel_stars_pm_ra, sel_stars_pm_dec,
-        curr_location, lats, lons, tz_names, self.sel_time,
-        sel_days, step_min
-    )
+        sel_ssbodies = sel_ssbodies,
+        sel_stars = sel_stars,
+        stars_ra0 = sel_stars_ra0,
+        stars_dec0 = sel_stars_dec0,
+        stars_pm_ra = sel_stars_pm_ra,
+        stars_pm_dec = sel_stars_pm_dec,
+        loc_name= curr_location,
+        lats = lats,
+        lons = lons,
+        tz_names = tz_names,
+        sel_time = self.sel_time,
+        sel_days = sel_days,
+        t_delta = self.tdelta.value()
+)
 
     # Create Graph
     plot_type = self.select_graph.currentText()
