@@ -3,7 +3,7 @@ from functools import partial
 import pandas as pd
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox,
-    QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit
+    QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox
 )
 from PyQt6.QtGui import QAction
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -144,6 +144,50 @@ class MainWindow(QMainWindow):
         sidemenu.addWidget(self.halfhemisphere)
         sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
+        # Time MIN / MAX selection
+        self.tminmaxsel = QCheckBox('Set Time min / max')
+        self.tminmaxsel.setFixedWidth(150)
+        self.tminmaxsel.clicked.connect(lambda: cb.tminmaxsel(self))
+        sidemenu.addWidget(self.tminmaxsel)
+
+        # Time MIN / MAX Layout
+        tminmax = QHBoxLayout()
+        tminmax.setContentsMargins(0, 0, 0, 0)
+        self.tmin = QTimeEdit()
+        self.tmin.setDisplayFormat('HH:mm')
+        self.tmin.setEnabled(False)
+        self.tmin.setFixedWidth(80)
+        self.tmin.setTime(QTime(0, 0))
+        tminmax.addWidget(self.tmin)
+        label_tminmax = QLabel('-')
+        tminmax.addWidget(label_tminmax)
+        self.tmax = QTimeEdit()
+        self.tmax.setDisplayFormat('HH:mm')
+        self.tmax.setEnabled(False)
+        self.tmax.setFixedWidth(80)
+        self.tmax.setTime(QTime(0, 0))
+        tminmax.addWidget(self.tmax)
+        tminmax.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+        tminmax_widget = QWidget()
+        tminmax_widget.setLayout(tminmax)
+        sidemenu.addWidget(tminmax_widget)
+
+        # Time Step Layout
+        tdelta = QHBoxLayout()
+        tdelta.setContentsMargins(0, 0, 0, 0)
+        label_tdelta = QLabel('Time step [min]')
+        tdelta.addWidget(label_tdelta)
+        self.tdelta = QSpinBox()
+        self.tdelta.setRange(1, 30)
+        self.tdelta.setSingleStep(1)  # increment/decrement by 5
+        self.tdelta.setValue(5)
+        tdelta.addWidget(self.tdelta)
+        tdelta.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+        tdelta_widget = QWidget()
+        tdelta_widget.setLayout(tdelta)
+        sidemenu.addWidget(tdelta_widget)
+        sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
+
         # Button Styles
         style_button = """
             QPushButton {
@@ -171,7 +215,7 @@ class MainWindow(QMainWindow):
 
         # Side Menu Container
         sidemenu_widget = QWidget()
-        sidemenu_widget.setFixedWidth(180)
+        sidemenu_widget.setFixedWidth(200)
         sidemenu_widget.setLayout(sidemenu)
         main_row.addWidget(sidemenu_widget)
 
