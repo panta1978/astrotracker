@@ -10,10 +10,11 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
 import importlib
 import myastrolib as myal
-importlib.reload(myal)
 import myastroplot as myap
-importlib.reload(myap)
 from callbacks import callbacks as cb
+
+importlib.reload(myal)
+importlib.reload(myap)
 importlib.reload(cb)
 
 

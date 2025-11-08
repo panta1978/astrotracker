@@ -4,7 +4,9 @@ import sqlite3
 from PyQt6.QtWidgets import QMessageBox
 import importlib
 import myastrolib as myal
+
 importlib.reload(myal)
+
 
 
 # --- CHECK IF A STAR EXISTS

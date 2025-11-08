@@ -1,4 +1,5 @@
 # --- CALLBACKS USED BY MAIN FILE ---
+
 import os
 import pandas as pd
 import sqlite3
@@ -8,16 +9,17 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 import importlib
 import myastrolib as myal
-importlib.reload(myal)
 import myastroplot as myap
-importlib.reload(myap)
 from callbacks import add_stars
-importlib.reload(add_stars)
 from callbacks import add_locations
-importlib.reload(add_locations)
 from callbacks import remove_stars
-importlib.reload(remove_stars)
 from callbacks import remove_locations
+
+importlib.reload(myal)
+importlib.reload(myap)
+importlib.reload(add_stars)
+importlib.reload(add_locations)
+importlib.reload(remove_stars)
 importlib.reload(remove_locations)
 
 

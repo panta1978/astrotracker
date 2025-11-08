@@ -1,5 +1,5 @@
 # Excluded files
-*.sql
+*.db
 .idea
 __pycache__/
 

@@ -5,10 +5,11 @@ from PyQt6.QtWidgets import (
 )
 import importlib
 import myastrolib as myal
-importlib.reload(myal)
 import myastroplot as myap
-importlib.reload(myap)
 from callbacks import add_stars_callbacks as ascb
+
+importlib.reload(myal)
+importlib.reload(myap)
 importlib.reload(ascb)
 
 # --- ADD STARS ---
