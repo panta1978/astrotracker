@@ -111,6 +111,8 @@ def update_plot(self):
         tz_names = tz_names,
         sel_time = self.sel_time,
         sel_days = sel_days,
+        t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
+        t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
         t_delta = self.tdelta.value()
 )
 

@@ -74,10 +74,14 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
     if self.sel_time == 'Local':
         # Remove timezone for plot purposes (local timezones not fully supported in plotly)
+        t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00'
+        t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00'
+        t_delta = self.tdelta.value()
+        delta_days = 1 if t_min >= t_max else 0
         x_gr = pd.date_range(
-            start=f'{curr_day} 00:00',
-            end=f'{pd.to_datetime(curr_day) + pd.Timedelta(days=1):%Y-%m-%d} 00:00',
-            freq=f'5min',
+            start=f'{curr_day} {t_min}',
+            end=f'{pd.to_datetime(curr_day) + pd.Timedelta(days=delta_days):%Y-%m-%d} {t_max}',
+            freq=f'{t_delta}min',
             tz='UTC',
             nonexistent='shift_forward'
             )
@@ -156,7 +160,7 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
                 name=position), row=1, col=1)
 
         # Axes 1st ROW
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=1, col=1) # dtick=1.5*3600*1000
+        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=1, col=1, nticks=20)
         fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
@@ -174,7 +178,7 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 3)
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=2, col=1) # dtick=1.5*3600*1000
+        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=2, col=1, nticks=20)
         fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
         fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 

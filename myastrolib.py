@@ -90,7 +90,7 @@ def get_coords(
         sel_ssbodies,
         sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec,
         loc_name, lats, lons, tz_names, sel_time,
-        sel_days, t_delta
+        sel_days, t_min, t_max, t_delta
 ):
 
     df_s = [] # Init output structure
@@ -111,9 +111,10 @@ def get_coords(
         elif sel_time == 'Greenwich': curr_tz = 0
 
         # Get local time (multiple days)
+        delta_days = 1 if t_min >= t_max else 0
         t_current_s = [pd.date_range(
-            start=f'{sel_day} 00:00',
-            end=f'{pd.to_datetime(sel_day) + pd.Timedelta(days=1):%Y-%m-%d} 00:00',
+            start=f'{sel_day} {t_min}',
+            end=f'{pd.to_datetime(sel_day) + pd.Timedelta(days=delta_days):%Y-%m-%d} {t_max}',
             freq=f'{t_delta}min',
             tz=curr_tz,
             nonexistent='shift_forward'
