@@ -111,7 +111,7 @@ def update_plot(self):
         stars_dec0 = sel_stars_dec0,
         stars_pm_ra = sel_stars_pm_ra,
         stars_pm_dec = sel_stars_pm_dec,
-        loc_name= curr_location,
+        loc_names= [curr_location],
         lats = lats,
         lons = lons,
         tz_names = tz_names,
