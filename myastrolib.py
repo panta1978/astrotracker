@@ -1,4 +1,9 @@
-import os
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 import pandas as pd
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder

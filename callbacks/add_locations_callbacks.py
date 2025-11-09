@@ -1,3 +1,9 @@
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 # --- CALLBACKS USED BY ADD_LOCATIONS ---
 
 import sqlite3
