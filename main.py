@@ -34,11 +34,13 @@ class MainWindow(QMainWindow):
         df_loc: pd.DataFrame
         df_out: pd.DataFrame
         sel_time: str
+        recalc: bool
 
         # Window Setup
         super().__init__()
         self.setWindowTitle('Astrotracker')
         self.ver = '1.1'
+        self.recalc = True
         cb.init_data(self)
         QTimer.singleShot(0, self.showMaximized)
 
@@ -59,6 +61,7 @@ class MainWindow(QMainWindow):
         self.select_object = QComboBox()
         self.select_object.addItems(self.ssobj + self.df_stars.star.tolist())
         self.select_object.setFixedWidth(150)
+        self.select_object.currentIndexChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_object)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -70,6 +73,7 @@ class MainWindow(QMainWindow):
         self.select_location = QComboBox()
         self.select_location.addItems(self.df_loc.location)
         self.select_location.setFixedWidth(250)
+        self.select_location.currentIndexChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_location)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -83,6 +87,7 @@ class MainWindow(QMainWindow):
         self.select_day.setMinimumDate(QDate(1900, 1, 1))
         self.select_day.setMaximumDate(QDate(2100, 12, 31))
         self.select_day.setCalendarPopup(True)
+        self.select_day.dateTimeChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_day)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -166,6 +171,7 @@ class MainWindow(QMainWindow):
         self.tmin.setEnabled(False)
         self.tmin.setFixedWidth(80)
         self.tmin.setTime(QTime(0, 0))
+        self.tmin.dateTimeChanged.connect(lambda: cb.tminmaxsel(self))
         tminmax.addWidget(self.tmin)
         label_tminmax = QLabel('-')
         tminmax.addWidget(label_tminmax)
@@ -174,6 +180,7 @@ class MainWindow(QMainWindow):
         self.tmax.setEnabled(False)
         self.tmax.setFixedWidth(80)
         self.tmax.setTime(QTime(0, 0))
+        self.tmax.dateTimeChanged.connect(lambda: cb.tminmaxsel(self))
         tminmax.addWidget(self.tmax)
         tminmax.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
         tminmax_widget = QWidget()
@@ -189,6 +196,7 @@ class MainWindow(QMainWindow):
         self.tdelta.setRange(1, 15)
         self.tdelta.setSingleStep(1)  # increment/decrement by 5
         self.tdelta.setValue(5)
+        self.tdelta.valueChanged.connect(lambda: cb.change_objparam(self))
         tdelta.addWidget(self.tdelta)
         tdelta.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
         tdelta_widget = QWidget()

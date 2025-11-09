@@ -60,6 +60,7 @@ def set_time_type(self, curr_label):
     for label, act in self.actions.items():
         act.setChecked(label == curr_label)
         self.sel_time = curr_label
+    self.recalc = True
 
 
 
@@ -104,32 +105,40 @@ def update_plot(self):
     sel_days = [curr_day]
 
     # Get Data
-    self.df_out = myal.get_coords(
-        sel_ssbodies = sel_ssbodies,
-        sel_stars = sel_stars,
-        stars_ra0 = sel_stars_ra0,
-        stars_dec0 = sel_stars_dec0,
-        stars_pm_ra = sel_stars_pm_ra,
-        stars_pm_dec = sel_stars_pm_dec,
-        loc_names= [curr_location],
-        lats = lats,
-        lons = lons,
-        tz_names = tz_names,
-        sel_time = self.sel_time,
-        sel_days = sel_days,
-        t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
-        t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
-        t_delta = self.tdelta.value()
-)
+    if self.recalc:
+        self.df_out = myal.get_coords(
+            sel_ssbodies = sel_ssbodies,
+            sel_stars = sel_stars,
+            stars_ra0 = sel_stars_ra0,
+            stars_dec0 = sel_stars_dec0,
+            stars_pm_ra = sel_stars_pm_ra,
+            stars_pm_dec = sel_stars_pm_dec,
+            loc_names= [curr_location],
+            lats = lats,
+            lons = lons,
+            tz_names = tz_names,
+            sel_time = self.sel_time,
+            sel_days = sel_days,
+            t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
+            t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
+            t_delta = self.tdelta.value()
+    )
 
     # Create Graph
     plot_type = self.select_graph.currentText()
     myap.makeplot(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
     self.export_button.setEnabled(True)
+    self.recalc = False # If no input parameter changes, do not recalculate objects' positions
 
 
 
- # ---  EXPORT DATA ---
+# --- TIME STEP CHANGED
+def change_objparam(self):
+    self.recalc = True
+
+
+
+# ---  EXPORT DATA ---
 def export_data(self):
 
     file_path, _ = QFileDialog.getSaveFileName(
@@ -157,6 +166,7 @@ def tminmaxsel(self):
     is_chk = self.tminmaxsel.isChecked()
     self.tmin.setEnabled(is_chk)
     self.tmax.setEnabled(is_chk)
+    self.recalc = True
 
 
 
