@@ -1,4 +1,11 @@
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 # --- CALLBACKS USED BY MAIN FILE ---
+
 import os
 import pandas as pd
 import sqlite3
@@ -8,16 +15,17 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 import importlib
 import myastrolib as myal
-importlib.reload(myal)
 import myastroplot as myap
-importlib.reload(myap)
 from callbacks import add_stars
-importlib.reload(add_stars)
 from callbacks import add_locations
-importlib.reload(add_locations)
 from callbacks import remove_stars
-importlib.reload(remove_stars)
 from callbacks import remove_locations
+
+importlib.reload(myal)
+importlib.reload(myap)
+importlib.reload(add_stars)
+importlib.reload(add_locations)
+importlib.reload(remove_stars)
 importlib.reload(remove_locations)
 
 
@@ -52,6 +60,7 @@ def set_time_type(self, curr_label):
     for label, act in self.actions.items():
         act.setChecked(label == curr_label)
         self.sel_time = curr_label
+    self.recalc = True
 
 
 
@@ -94,24 +103,42 @@ def update_plot(self):
 
     # Time info
     sel_days = [curr_day]
-    step_min = 5 # minutes
 
     # Get Data
-    self.df_out = myal.get_coords(
-        sel_ssbodies,
-        sel_stars, sel_stars_ra0, sel_stars_dec0, sel_stars_pm_ra, sel_stars_pm_dec,
-        curr_location, lats, lons, tz_names, self.sel_time,
-        sel_days, step_min
+    if self.recalc:
+        self.df_out = myal.get_coords(
+            sel_ssbodies = sel_ssbodies,
+            sel_stars = sel_stars,
+            stars_ra0 = sel_stars_ra0,
+            stars_dec0 = sel_stars_dec0,
+            stars_pm_ra = sel_stars_pm_ra,
+            stars_pm_dec = sel_stars_pm_dec,
+            loc_names= [curr_location],
+            lats = lats,
+            lons = lons,
+            tz_names = tz_names,
+            sel_time = self.sel_time,
+            sel_days = sel_days,
+            t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
+            t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
+            t_delta = self.tdelta.value()
     )
 
     # Create Graph
     plot_type = self.select_graph.currentText()
     myap.makeplot(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
     self.export_button.setEnabled(True)
+    self.recalc = False # If no input parameter changes, do not recalculate objects' positions
 
 
 
- # ---  EXPORT DATA ---
+# --- TIME STEP CHANGED
+def change_objparam(self):
+    self.recalc = True
+
+
+
+# ---  EXPORT DATA ---
 def export_data(self):
 
     file_path, _ = QFileDialog.getSaveFileName(
@@ -139,6 +166,7 @@ def tminmaxsel(self):
     is_chk = self.tminmaxsel.isChecked()
     self.tmin.setEnabled(is_chk)
     self.tmax.setEnabled(is_chk)
+    self.recalc = True
 
 
 
@@ -165,3 +193,19 @@ def call_add_locations(window):
 # --- REMOVE LOCATIONS ---
 def call_remove_locations(self):
     remove_locations.remove_locations(self)
+
+
+
+# --- ABOUT DIALOG ---
+def show_about_dialog(self):
+    text = (
+            '<b>Astrotracker</b><br>'
+            f'Version {self.ver}<br><br>'
+            'A Python-based tool for astronomical event tracking and visualisation.<br><br>'
+            '<b>License:</b><br>'
+            'MIT License<br>'
+            'Copyright (c) 2025 Stefano Pantaleoni<br><br>'
+            'See LICENSE.txt for full details.'
+        )
+    QMessageBox.about(self, 'About Astrotracker', text)
+    

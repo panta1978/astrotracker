@@ -1,19 +1,26 @@
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 import sys
 from functools import partial
 import pandas as pd
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox,
-    QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit
+    QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox
 )
 from PyQt6.QtGui import QAction
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
 import importlib
 import myastrolib as myal
-importlib.reload(myal)
 import myastroplot as myap
-importlib.reload(myap)
 from callbacks import callbacks as cb
+
+importlib.reload(myal)
+importlib.reload(myap)
 importlib.reload(cb)
 
 
@@ -27,10 +34,13 @@ class MainWindow(QMainWindow):
         df_loc: pd.DataFrame
         df_out: pd.DataFrame
         sel_time: str
+        recalc: bool
 
         # Window Setup
         super().__init__()
         self.setWindowTitle('Astrotracker')
+        self.ver = '1.1'
+        self.recalc = True
         cb.init_data(self)
         QTimer.singleShot(0, self.showMaximized)
 
@@ -51,6 +61,7 @@ class MainWindow(QMainWindow):
         self.select_object = QComboBox()
         self.select_object.addItems(self.ssobj + self.df_stars.star.tolist())
         self.select_object.setFixedWidth(150)
+        self.select_object.currentIndexChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_object)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -62,6 +73,7 @@ class MainWindow(QMainWindow):
         self.select_location = QComboBox()
         self.select_location.addItems(self.df_loc.location)
         self.select_location.setFixedWidth(250)
+        self.select_location.currentIndexChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_location)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -75,6 +87,7 @@ class MainWindow(QMainWindow):
         self.select_day.setMinimumDate(QDate(1900, 1, 1))
         self.select_day.setMaximumDate(QDate(2100, 12, 31))
         self.select_day.setCalendarPopup(True)
+        self.select_day.dateTimeChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_day)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -144,6 +157,53 @@ class MainWindow(QMainWindow):
         sidemenu.addWidget(self.halfhemisphere)
         sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
+        # Time MIN / MAX selection
+        self.tminmaxsel = QCheckBox('Set Time min / max')
+        self.tminmaxsel.setFixedWidth(150)
+        self.tminmaxsel.clicked.connect(lambda: cb.tminmaxsel(self))
+        sidemenu.addWidget(self.tminmaxsel)
+
+        # Time MIN / MAX Layout
+        tminmax = QHBoxLayout()
+        tminmax.setContentsMargins(0, 0, 0, 0)
+        self.tmin = QTimeEdit()
+        self.tmin.setDisplayFormat('HH:mm')
+        self.tmin.setEnabled(False)
+        self.tmin.setFixedWidth(80)
+        self.tmin.setTime(QTime(0, 0))
+        self.tmin.dateTimeChanged.connect(lambda: cb.tminmaxsel(self))
+        tminmax.addWidget(self.tmin)
+        label_tminmax = QLabel('-')
+        tminmax.addWidget(label_tminmax)
+        self.tmax = QTimeEdit()
+        self.tmax.setDisplayFormat('HH:mm')
+        self.tmax.setEnabled(False)
+        self.tmax.setFixedWidth(80)
+        self.tmax.setTime(QTime(0, 0))
+        self.tmax.dateTimeChanged.connect(lambda: cb.tminmaxsel(self))
+        tminmax.addWidget(self.tmax)
+        tminmax.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+        tminmax_widget = QWidget()
+        tminmax_widget.setLayout(tminmax)
+        sidemenu.addWidget(tminmax_widget)
+
+        # Time Step Layout
+        tdelta = QHBoxLayout()
+        tdelta.setContentsMargins(0, 0, 0, 0)
+        label_tdelta = QLabel('Time step [min]')
+        tdelta.addWidget(label_tdelta)
+        self.tdelta = QSpinBox()
+        self.tdelta.setRange(1, 15)
+        self.tdelta.setSingleStep(1)  # increment/decrement by 5
+        self.tdelta.setValue(5)
+        self.tdelta.valueChanged.connect(lambda: cb.change_objparam(self))
+        tdelta.addWidget(self.tdelta)
+        tdelta.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+        tdelta_widget = QWidget()
+        tdelta_widget.setLayout(tdelta)
+        sidemenu.addWidget(tdelta_widget)
+        sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
+
         # Button Styles
         style_button = """
             QPushButton {
@@ -171,7 +231,7 @@ class MainWindow(QMainWindow):
 
         # Side Menu Container
         sidemenu_widget = QWidget()
-        sidemenu_widget.setFixedWidth(180)
+        sidemenu_widget.setFixedWidth(200)
         sidemenu_widget.setLayout(sidemenu)
         main_row.addWidget(sidemenu_widget)
 
@@ -215,6 +275,13 @@ class MainWindow(QMainWindow):
         loc_remove = QAction('Remove Locations', self)
         loc_remove.triggered.connect(lambda: cb.call_remove_locations(self))
         loc_menu.addAction(loc_remove)
+
+        # Info Menu
+        loc_info = menubar.addMenu('Info')
+        loc_about = QAction('About', self)
+        loc_about.triggered.connect(lambda: cb.show_about_dialog(self))
+        loc_info.addAction(loc_about)
+
 
         # Initial Plot
         cb.update_plot(self)

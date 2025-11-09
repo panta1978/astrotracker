@@ -1,4 +1,9 @@
-import os
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 import pandas as pd
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
@@ -89,14 +94,16 @@ def get_star_info(sel_star):
 def get_coords(
         sel_ssbodies,
         sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec,
-        loc_name, lats, lons, tz_names, sel_time,
-        sel_days, step_min
+        loc_names, lats, lons, tz_names, sel_time,
+        sel_days, t_min, t_max, t_delta
 ):
 
     df_s = [] # Init output structure
 
     # Loop through locations
-    for lat, lon, tz_name in zip(lats, lons, tz_names):
+    nl = 0
+    for lat, lon, loc_name, tz_name in zip(lats, lons, loc_names,tz_names):
+        nl += 1
 
         # Create location
         location = EarthLocation(
@@ -111,18 +118,22 @@ def get_coords(
         elif sel_time == 'Greenwich': curr_tz = 0
 
         # Get local time (multiple days)
+        delta_days = 1 if t_min >= t_max else 0
         t_current_s = [pd.date_range(
-            start=f'{sel_day} 00:00',
-            end=f'{pd.to_datetime(sel_day) + pd.Timedelta(days=1):%Y-%m-%d} 00:00',
-            freq=f'{step_min}min',
+            start=f'{sel_day} {t_min}',
+            end=f'{pd.to_datetime(sel_day) + pd.Timedelta(days=delta_days):%Y-%m-%d} {t_max}',
+            freq=f'{t_delta}min',
             tz=curr_tz,
             nonexistent='shift_forward'
         ) for sel_day in sel_days]
         t_current = pd.concat([r.to_series() for r in t_current_s]).index
+        n_day_s = [[i+1 for _ in row] for i, row in enumerate(t_current_s)]
+        n_day = [elem for row in n_day_s for elem in row]
 
         # Day and location
         day_sel = [f'{t:%Y-%m-%d}' for t in t_current]
         loc_sel = [loc_name] * len(t_current)
+        n_loc = [nl] * len(t_current)
 
         # Conversion to UTC and sidereal
         hour_current = t_current.hour + t_current.minute / 60 + t_current.second / 3600
@@ -136,9 +147,11 @@ def get_coords(
         df_s1 = [
             pd.DataFrame({
                 't_current': t_current,
+                'n_day': n_day,
                 'hour_current': hour_current,
                 'day_sel': day_sel,
-                'loc_sel': loc_sel
+                'loc_sel': loc_sel,
+                'n_loc': n_loc
             })
         ]
 
@@ -161,7 +174,8 @@ def get_coords(
             })
             df_s1.append(df_i)
 
-        for (sel_star, star_ra0, star_dec0, star_pm_ra, star_pm_dec) in zip(sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec):
+        for (sel_star, star_ra0, star_dec0, star_pm_ra, star_pm_dec) in (
+            zip(sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec)):
 
             # Propagte Star position to today
             star_2000 = SkyCoord(

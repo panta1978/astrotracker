@@ -1,10 +1,18 @@
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 # --- CALLBACKS USED BY ADD_LOCATIONS ---
 
 import sqlite3
 from PyQt6.QtWidgets import QMessageBox
 import importlib
 import myastrolib as myal
+
 importlib.reload(myal)
+
 
 
 # --- CHECK IF A LOCATION EXISTS

@@ -1,3 +1,9 @@
+# MIT License
+# Copyright (c) 2025 Stefano Pantaleoni
+#
+# This file is part of the Astrotracker project.
+# See the LICENSE.txt file in the project root for full license information.
+
 # REMOVE LOCATIONS UI
 import sqlite3
 from PyQt6.QtWidgets import (
@@ -6,6 +12,7 @@ from PyQt6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QMessageBox
 )
 from PyQt6.QtCore import Qt
+
 
 
 def remove_locations(self):
