@@ -183,3 +183,19 @@ def call_add_locations(window):
 # --- REMOVE LOCATIONS ---
 def call_remove_locations(self):
     remove_locations.remove_locations(self)
+
+
+
+# --- ABOUT DIALOG ---
+def show_about_dialog(self):
+    text = (
+            '<b>Astrotracker</b><br>'
+            f'Version {self.ver}<br><br>'
+            'A Python-based tool for astronomical event tracking and visualisation.<br><br>'
+            '<b>License:</b><br>'
+            'MIT License<br>'
+            'Copyright (c) 2025 Stefano Pantaleoni<br><br>'
+            'See LICENSE.txt for full details.'
+        )
+    QMessageBox.about(self, 'About Astrotracker', text)
+    

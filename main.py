@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         # Window Setup
         super().__init__()
         self.setWindowTitle('Astrotracker')
+        self.ver = '1.1'
         cb.init_data(self)
         QTimer.singleShot(0, self.showMaximized)
 
@@ -266,6 +267,13 @@ class MainWindow(QMainWindow):
         loc_remove = QAction('Remove Locations', self)
         loc_remove.triggered.connect(lambda: cb.call_remove_locations(self))
         loc_menu.addAction(loc_remove)
+
+        # Info Menu
+        loc_info = menubar.addMenu('Info')
+        loc_about = QAction('About', self)
+        loc_about.triggered.connect(lambda: cb.show_about_dialog(self))
+        loc_info.addAction(loc_about)
+
 
         # Initial Plot
         cb.update_plot(self)
