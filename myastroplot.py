@@ -129,6 +129,12 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         'Day Below': extend(is_day & is_below)
     }
 
+    # For 2-axis plots, manage discontinuities of y1 (Azimuth) and y2 (hour angle)
+    if not('Polar' in plot_type):
+        ymax = 24 if 'Equatorial' in plot_type else 360
+        y2_isdisc = y2.diff().abs() > ymax*0.9
+        y2[y2_isdisc] = np.nan
+
     # Split y1, y2, and hover labels by positions
     y1s = {} ; y2s = {}
     times = {} ; azs = {} ; alts = {} ; has = {} ; decs = {}
