@@ -86,27 +86,28 @@ def update_plot(self):
                 multi_values.append(combo.currentText())  # get the selected text
 
     # Objects to be checked
-    if curr_obj in self.ssobj:
-        if curr_obj == 'SUN':
-            sel_ssbodies = ['SUN']
-        else:
-            sel_ssbodies = ['SUN', curr_obj]
-        sel_stars = []
-        sel_stars_ra0 = []
-        sel_stars_dec0 = []
-        sel_stars_pm_ra = []
-        sel_stars_pm_dec = []
+    if multi_mode == 'Multi Objects':
+        sel_ssbodies = [m for m in multi_values if m in self.ssobj]
+        sel_stars = [m for m in multi_values if m not in self.ssobj]
     else:
-        sel_ssbodies = ['SUN']
-        sel_stars = [curr_obj]
-        sel_star_ra0 = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['ra0']
-        sel_stars_ra0 = [sel_star_ra0]
-        sel_star_dec0 = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['dec0']
-        sel_stars_dec0 = [sel_star_dec0]
-        sel_star_pm_ra = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['pm_ra']
-        sel_stars_pm_ra = [sel_star_pm_ra]
-        sel_star_pm_dec = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['pm_dec']
-        sel_stars_pm_dec = [sel_star_pm_dec]
+        if curr_obj in self.ssobj:
+            if curr_obj == 'SUN':
+                sel_ssbodies = ['SUN']
+            else:
+                sel_ssbodies = ['SUN', curr_obj]
+            sel_stars = []
+        else:
+            sel_ssbodies = ['SUN']
+            sel_stars = [curr_obj]
+
+    sel_stars_ra0 = [] ; sel_stars_dec0 = []
+    sel_stars_pm_ra = [] ; sel_stars_pm_dec = []
+    for sel_star in sel_stars:
+        curr_rec = self.df_stars.loc[self.df_stars['star'] == sel_star].iloc[0]
+        sel_stars_ra0.append(curr_rec['ra0'])
+        sel_stars_dec0.append(curr_rec['dec0'])
+        sel_stars_pm_ra.append(curr_rec['pm_ra'])
+        sel_stars_pm_dec.append(curr_rec['pm_dec'])
 
     # Current position info
     if multi_mode == 'Multi Locations':

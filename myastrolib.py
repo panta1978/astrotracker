@@ -50,7 +50,6 @@ def get_location_coord(sel_location):
 
         # Get Local Time
         local_utc = lon / 15
-        #print(f'{sel_location};{lat_i};{lon_i};{tz_name_i};{fixed_utc_i};{local_utc_i}')
 
     else: # Location not found
         print(f'Location {sel_location} not found. Skipped')
