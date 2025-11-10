@@ -8,7 +8,7 @@ import sys
 from functools import partial
 import pandas as pd
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget,
     QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox
 )
 from PyQt6.QtGui import QAction
@@ -39,8 +39,10 @@ class MainWindow(QMainWindow):
         # Window Setup
         super().__init__()
         self.setWindowTitle('Astrotracker')
-        self.ver = '1.1'
+        self.ver = '1.2'
         self.recalc = True
+        self.multimin = 2
+        self.multimax = 12
         cb.init_data(self)
         QTimer.singleShot(0, self.showMaximized)
 
@@ -72,7 +74,7 @@ class MainWindow(QMainWindow):
 
         self.select_location = QComboBox()
         self.select_location.addItems(self.df_loc.location)
-        self.select_location.setFixedWidth(250)
+        self.select_location.setFixedWidth(200)
         self.select_location.currentIndexChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_location)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
@@ -89,25 +91,7 @@ class MainWindow(QMainWindow):
         self.select_day.setCalendarPopup(True)
         self.select_day.dateTimeChanged.connect(lambda: cb.change_objparam(self))
         top_row.addWidget(self.select_day)
-        top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
-
-        # Graph Selection
-        label_graph = QLabel('Graph Type:')
-        label_graph.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        top_row.addWidget(label_graph)
-
-        self.select_graph = QComboBox()
-        self.select_graph.addItems([
-            'Azimuth/Altidude',
-            'Azimuth/Altidude (Polar)',
-            'Equatorial',
-            'Equatorial (Polar, North)',
-            'Equatorial (Polar, South)'
-        ])
-        self.select_graph.setFixedWidth(200)
-        top_row.addWidget(self.select_graph)
         top_row.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding))
-
 
         # Top Row Container
         container_top_row = QWidget()
@@ -124,9 +108,27 @@ class MainWindow(QMainWindow):
         self.webview = QWebEngineView()
         main_row.addWidget(self.webview)
 
-        # Side Menu
+
+        # -- SIDE MENU (WITHIN MAIN ROW) ---
         sidemenu = QVBoxLayout()
         sidemenu.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Graph Selection
+        label_graph = QLabel('Graph Type:')
+        label_graph.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        sidemenu.addWidget(label_graph)
+
+        self.select_graph = QComboBox()
+        self.select_graph.addItems([
+            'Azimuth/Altidude',
+            'Azimuth/Altidude (Polar)',
+            'Equatorial',
+            'Equatorial (Polar, North)',
+            'Equatorial (Polar, South)'
+        ])
+        self.select_graph.setFixedWidth(150)
+        sidemenu.addWidget(self.select_graph)
+        sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
         # Graph Options Label
         label_graphopts = QLabel('Graph Options:')
@@ -194,7 +196,7 @@ class MainWindow(QMainWindow):
         tdelta.addWidget(label_tdelta)
         self.tdelta = QSpinBox()
         self.tdelta.setRange(1, 15)
-        self.tdelta.setSingleStep(1)  # increment/decrement by 5
+        self.tdelta.setSingleStep(1)
         self.tdelta.setValue(5)
         self.tdelta.valueChanged.connect(lambda: cb.change_objparam(self))
         tdelta.addWidget(self.tdelta)
@@ -234,6 +236,70 @@ class MainWindow(QMainWindow):
         sidemenu_widget.setFixedWidth(200)
         sidemenu_widget.setLayout(sidemenu)
         main_row.addWidget(sidemenu_widget)
+
+
+        # -- SIDE MENU 2 (WITHIN MAIN ROW) FOR MULTIPLE DATA ---
+        multidatamenu = QVBoxLayout()
+        multidatamenu.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # Multi Data
+        label_selmultidata = QLabel('Multi Data:')
+        label_selmultidata.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        multidatamenu.addWidget(label_selmultidata)
+
+        # Multi Selector
+        self.selmultidata = QComboBox()
+        self.selmultidata.addItems([
+            'Single Data',
+            'Multi Objects',
+            'Multi Locations',
+            'Multi Days'
+        ])
+        self.selmultidata.setFixedWidth(120)
+        self.selmultidata.currentIndexChanged.connect(lambda: cb.selmultidata(self))
+        multidatamenu.addWidget(self.selmultidata)
+
+              # Table Height Menu
+        nrows = QHBoxLayout()
+        nrows.setContentsMargins(0, 0, 0, 0)
+        label_nrows = QLabel('Nr of rows')
+        nrows.addWidget(label_nrows)
+        self.nrows = QSpinBox()
+        self.nrows.setRange(self.multimin, self.multimax)
+        self.nrows.setSingleStep(1)
+        self.nrows.setValue(self.multimin)
+        self.nrows.valueChanged.connect(lambda: cb.selmultidata(self))
+        nrows.addWidget(self.nrows)
+        nrows.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+        nrows_widget = QWidget()
+        nrows_widget.setLayout(nrows)
+        multidatamenu.addWidget(nrows_widget)
+
+        # Multi Table
+        self.multitable = QTableWidget()
+        self.multitable.setRowCount(self.multimin)
+        self.multitable.setColumnCount(1)
+        self.multitable.horizontalHeader().hide()
+        self.multitable.verticalHeader().hide()
+        multi_options = ['']
+        for row in range(12):
+            combo = QComboBox()
+            combo.addItems(multi_options)
+            combo.setCurrentIndex(0)  # default to empty
+            #combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+            combo.setMinimumHeight(24)  # makes it look better
+            self.multitable.setCellWidget(row, 0, combo)
+        self.multitable.horizontalHeader().setStretchLastSection(True)
+        self.multitable.setEnabled(False)
+        multidatamenu.addWidget(self.multitable)
+        multidatamenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding))
+
+        # Side Menu Container
+        multidata_widget = QWidget()
+        multidata_widget.setFixedWidth(200)
+        multidata_widget.setLayout(multidatamenu)
+        main_row.addWidget(multidata_widget)
+
 
         # Main Row Container
         container_main_row = QWidget()

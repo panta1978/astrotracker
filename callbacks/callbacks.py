@@ -10,9 +10,9 @@ import os
 import pandas as pd
 import sqlite3
 from PyQt6.QtWidgets import (
-    QFileDialog, QMessageBox, QApplication
+    QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QDate
 import importlib
 import myastrolib as myal
 import myastroplot as myap
@@ -135,6 +135,57 @@ def update_plot(self):
 # --- TIME STEP CHANGED
 def change_objparam(self):
     self.recalc = True
+
+
+
+# --- MULTI DATA SELECTION
+def selmultidata(self):
+
+    # Enable multitable and upper buttons
+    enabs = [True, True, True, True]
+    if self.selmultidata.currentText() == 'Single Data':
+        enabs[0] = False
+        multi_options = []
+    if self.selmultidata.currentText() == 'Multi Objects':
+        enabs[1] = False
+        multi_options = self.ssobj + self.df_stars.star.tolist()
+    if self.selmultidata.currentText() == 'Multi Locations':
+        enabs[2] = False
+        multi_options = self.df_loc.location.tolist()
+    if self.selmultidata.currentText() == 'Multi Days':
+        enabs[3] = False
+        multi_options = []
+    self.multitable.setEnabled(enabs[0])
+    self.select_object.setEnabled(enabs[1])
+    self.select_location.setEnabled(enabs[2])
+    self.select_day.setEnabled(enabs[3])
+
+    # Adjust number of rows
+    self.multitable.clearContents()
+    self.multitable.setRowCount(self.nrows.value())
+
+    # Set Table options (cases: Objects / Locations)
+    if self.selmultidata.currentText() in ['Multi Objects', 'Multi Locations']:
+        ni = 0
+        for row in range(self.nrows.value()):
+            combo = QComboBox()
+            combo.addItems(multi_options)
+            combo.setCurrentIndex(ni)  # default to empty
+            combo.setMinimumHeight(24)  # makes it look better
+            self.multitable.setCellWidget(row, 0, combo)
+            ni += 1
+
+    # Set Table options (cases: Objects / Locations)
+    if self.selmultidata.currentText() == 'Multi Days':
+        ni = 0
+        for row in range(self.nrows.value()):
+            dateedit = QDateEdit()
+            dateedit.setDisplayFormat('dd/MM/yyyy')
+            dateedit.setDate(QDate.currentDate().addDays(ni))
+            dateedit.setCalendarPopup(True)
+            dateedit.setMinimumHeight(24)
+            self.multitable.setCellWidget(row, 0, dateedit)
+            ni += 1
 
 
 
