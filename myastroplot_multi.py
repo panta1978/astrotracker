@@ -69,6 +69,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     # Init variables
     y1s = {} ; y2s = {}
     times = {} ; azs = {} ; alts = {} ; has = {} ; decs = {}
+    x_gr = {}
 
     for multi_value in multi_values:
         dfos = df_outspl[multi_value]
@@ -119,15 +120,15 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         has[multi_value] = [to_hms(x) for x in dfos['obj_ha'].copy()]
         decs[multi_value] = [to_dms(x) for x in dfos['obj_declination_deg'].copy()]
 
-    # Define x-axis (time) - Equal for all lines. A dummy day is used for reference
-    t_series = df_outspl[multi_values[0]].t_current
-    first_date = t_series.iloc[0].date()
-    x_gr = t_series.apply(
-        lambda t: datetime.combine(
-            date(1970, 1, 1) + timedelta(days=(t.date() - first_date).days),
-            t.time()
+        # Define x-axis (time) - Equal for all lines. A dummy day is used for reference
+        t_series = df_outspl[multi_value].t_current
+        first_date = t_series.iloc[0].date()
+        x_gr[multi_value] = t_series.apply(
+            lambda t: datetime.combine(
+                date(1970, 1, 1) + timedelta(days=(t.date() - first_date).days),
+                t.time()
+            )
         )
-    )
 
     hover_templ = (
         'Time: %{customdata[0]}<br>'
@@ -155,19 +156,19 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         # Add lines 1st ROW
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
-            fig.add_trace(go.Scatter(x=x_gr, y=y1s[multi_value], mode='lines',
+            fig.add_trace(go.Scatter(x=x_gr[multi_value], y=y1s[multi_value], mode='lines',
                 line=dict(color=graphcols[nv], width=1),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value), row=1, col=1)
 
         # Axes 1st ROW
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=1, col=1, tickformat='%H:%M', nticks=20)
+        fig.update_xaxes(range=[x_gr[multi_value].min(), x_gr[multi_value].max()], row=1, col=1, tickformat='%H:%M', nticks=20)
         fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
-            fig.add_trace(go.Scatter(x=x_gr, y=y2s[multi_value], mode='lines',
+            fig.add_trace(go.Scatter(x=x_gr[multi_value], y=y2s[multi_value], mode='lines',
                 line=dict(color=graphcols[nv], width=1),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value, showlegend=False), row=2, col=1)
@@ -177,7 +178,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 3)
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=2, col=1, tickformat='%H:%M', nticks=20)
+        fig.update_xaxes(range=[x_gr[multi_value].min(), x_gr[multi_value].max()], row=2, col=1, tickformat='%H:%M', nticks=20)
         fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
         fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 
