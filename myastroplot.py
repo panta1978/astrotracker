@@ -171,7 +171,7 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
                 name=position), row=1, col=1)
 
         # Axes 1st ROW
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=1, col=1, nticks=20)
+        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=1, col=1, tickformat='%H:%M', nticks=20)
         fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
@@ -189,7 +189,7 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 3)
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=2, col=1, nticks=20)
+        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=2, col=1, tickformat='%H:%M', nticks=20)
         fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
         fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 

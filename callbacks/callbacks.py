@@ -67,10 +67,23 @@ def set_time_type(self, curr_label):
 # --- UPDATE PLOT ---
 def update_plot(self):
 
-    # Get parameters
+    # Mode Type
+    multi_mode = self.selmultidata.currentText()
+
+    # Get parameters (single mode)
     curr_obj = self.select_object.currentText()
     curr_location = self.select_location.currentText()
     curr_day = self.select_day.date().toString('yyyy-MM-dd')
+
+    # Get parameters (multiple mode)
+    multi_values = []
+    for row in range(self.multitable.rowCount()):
+        combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+        if combo is not None:
+            if multi_mode == 'Multi Days':
+                multi_values.append(combo.date().toString('yyyy-MM-dd'))
+            else:
+                multi_values.append(combo.currentText())  # get the selected text
 
     # Objects to be checked
     if curr_obj in self.ssobj:
@@ -96,13 +109,22 @@ def update_plot(self):
         sel_stars_pm_dec = [sel_star_pm_dec]
 
     # Current position info
-    row = self.df_loc.loc[self.df_loc['location'] == curr_location].iloc[0]
-    lats = [row['latitude']]
-    lons = [row['longitude']]
-    tz_names = [row['time_zone']]
+    if multi_mode == 'Multi Locations':
+        sel_locations = multi_values
+    else:
+        sel_locations = [curr_location]
+    lats = [] ; lons = [] ; tz_names = []
+    for sel_location in sel_locations:
+        row = self.df_loc.loc[self.df_loc['location'] == sel_location].iloc[0]
+        lats.append(row['latitude'])
+        lons.append(row['longitude'])
+        tz_names.append(row['time_zone'])
 
     # Time info
-    sel_days = [curr_day]
+    if multi_mode == 'Multi Days':
+        sel_days = multi_values
+    else:
+        sel_days = [curr_day]
 
     # Get Data
     if self.recalc:
@@ -113,7 +135,7 @@ def update_plot(self):
             stars_dec0 = sel_stars_dec0,
             stars_pm_ra = sel_stars_pm_ra,
             stars_pm_dec = sel_stars_pm_dec,
-            loc_names= [curr_location],
+            loc_names= sel_locations,
             lats = lats,
             lons = lons,
             tz_names = tz_names,
@@ -141,18 +163,21 @@ def change_objparam(self):
 # --- MULTI DATA SELECTION
 def selmultidata(self):
 
+    # Mode Type
+    multi_mode = self.selmultidata.currentText()
+
     # Enable multitable and upper buttons
     enabs = [True, True, True, True]
-    if self.selmultidata.currentText() == 'Single Data':
+    if multi_mode == 'Single Data':
         enabs[0] = False
         multi_options = []
-    if self.selmultidata.currentText() == 'Multi Objects':
+    if multi_mode == 'Multi Objects':
         enabs[1] = False
         multi_options = self.ssobj + self.df_stars.star.tolist()
-    if self.selmultidata.currentText() == 'Multi Locations':
+    if multi_mode == 'Multi Locations':
         enabs[2] = False
         multi_options = self.df_loc.location.tolist()
-    if self.selmultidata.currentText() == 'Multi Days':
+    if multi_mode == 'Multi Days':
         enabs[3] = False
         multi_options = []
     self.multitable.setEnabled(enabs[0])
@@ -165,27 +190,31 @@ def selmultidata(self):
     self.multitable.setRowCount(self.nrows.value())
 
     # Set Table options (cases: Objects / Locations)
-    if self.selmultidata.currentText() in ['Multi Objects', 'Multi Locations']:
+    if multi_mode in ['Multi Objects', 'Multi Locations']:
         ni = 0
         for row in range(self.nrows.value()):
             combo = QComboBox()
             combo.addItems(multi_options)
             combo.setCurrentIndex(ni)  # default to empty
+            combo.currentIndexChanged.connect(lambda index, r=row: change_objparam(self))
             combo.setMinimumHeight(24)  # makes it look better
             self.multitable.setCellWidget(row, 0, combo)
             ni += 1
 
     # Set Table options (cases: Objects / Locations)
-    if self.selmultidata.currentText() == 'Multi Days':
+    if multi_mode == 'Multi Days':
         ni = 0
         for row in range(self.nrows.value()):
             dateedit = QDateEdit()
             dateedit.setDisplayFormat('dd/MM/yyyy')
             dateedit.setDate(QDate.currentDate().addDays(ni))
             dateedit.setCalendarPopup(True)
+            dateedit.dateChanged.connect(lambda index, r=row: change_objparam(self))
             dateedit.setMinimumHeight(24)
             self.multitable.setCellWidget(row, 0, dateedit)
             ni += 1
+
+    self.recalc = True
 
 
 

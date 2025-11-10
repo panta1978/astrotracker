@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.ver = '1.2'
         self.recalc = True
         self.multimin = 2
-        self.multimax = 12
+        self.multimax = 18
         cb.init_data(self)
         QTimer.singleShot(0, self.showMaximized)
 
@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
         self.selmultidata.currentIndexChanged.connect(lambda: cb.selmultidata(self))
         multidatamenu.addWidget(self.selmultidata)
 
-              # Table Height Menu
+        # Table Height Menu
         nrows = QHBoxLayout()
         nrows.setContentsMargins(0, 0, 0, 0)
         label_nrows = QLabel('Nr of rows')
@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
             combo = QComboBox()
             combo.addItems(multi_options)
             combo.setCurrentIndex(0)  # default to empty
-            #combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+            combo.currentIndexChanged.connect(lambda index, r=row: cb.change_objparam(self))
             combo.setMinimumHeight(24)  # makes it look better
             self.multitable.setCellWidget(row, 0, combo)
         self.multitable.horizontalHeader().setStretchLastSection(True)
