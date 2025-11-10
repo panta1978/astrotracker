@@ -16,6 +16,7 @@ from PyQt6.QtCore import QDate
 import importlib
 import myastrolib as myal
 import myastroplot as myap
+import myastroplot_multi as myapm
 from callbacks import add_stars
 from callbacks import add_locations
 from callbacks import remove_stars
@@ -149,7 +150,10 @@ def update_plot(self):
 
     # Create Graph
     plot_type = self.select_graph.currentText()
-    myap.makeplot(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
+    if multi_mode == 'Single Data':
+        myap.makeplot_single(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
+    else:
+        myapm.makeplot_multi(self.df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self)
     self.export_button.setEnabled(True)
     self.recalc = False # If no input parameter changes, do not recalculate objects' positions
 

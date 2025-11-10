@@ -6,13 +6,14 @@
 
 import numpy as np
 import pandas as pd
+from datetime import datetime, date, timedelta
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
 
-# --- LAUNCH PLOT ---
-def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
+# --- LAUNCH PLOT (SINGLE) ---
+def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
     # Define Variables
     if 'Azimuth/Altidude' in plot_type:
@@ -54,6 +55,15 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     ha = [to_hms(x) for x in df_out[f'{curr_obj}_ha'].copy()]
     dec = [to_dms(x) for x in df_out[f'{curr_obj}_declination_deg'].copy()]
 
+    hover_templ = (
+        'Time: %{customdata[0]}<br>'
+        'Azimuth: %{customdata[1]}°<br>'
+        'Altitude: %{customdata[2]}°<br>'
+        'Hour Angle: %{customdata[3]}<br>'
+        'Declination: %{customdata[4]}°<br>'
+        '<extra></extra>'
+    )
+
     # Set colours
     if curr_obj == 'SUN':
         cols = {
@@ -67,32 +77,17 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             'Twilight': 'rgb(30, 90, 220)',
             'Day': 'rgb(150, 210, 255)'
         }
-
-    hover_templ = (
-        'Time: %{customdata[0]}<br>'
-        'Azimuth: %{customdata[1]}°<br>'
-        'Altitude: %{customdata[2]}°<br>'
-        'Hour Angle: %{customdata[3]}<br>'
-        'Declination: %{customdata[4]}°<br>'
-        '<extra></extra>'
+    
+    # Define x-axis (time) - A dummy day is used for reference
+    t_series = df_out.t_current
+    first_date = t_series.iloc[0].date()
+    x_gr = t_series.apply(
+        lambda t: datetime.combine(
+            date(1970, 1, 1) + timedelta(days=(t.date() - first_date).days),
+            t.time()
+        )
     )
-
-    if self.sel_time == 'Local':
-        # Remove timezone for plot purposes (local timezones not fully supported in plotly)
-        t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00'
-        t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00'
-        t_delta = self.tdelta.value()
-        delta_days = 1 if t_min >= t_max else 0
-        x_gr = pd.date_range(
-            start=f'{curr_day} {t_min}',
-            end=f'{pd.to_datetime(curr_day) + pd.Timedelta(days=delta_days):%Y-%m-%d} {t_max}',
-            freq=f'{t_delta}min',
-            tz='UTC',
-            nonexistent='shift_forward'
-            )
-    else:
-        x_gr = self.df_out.t_current
-
+    
     # Prepare line styles with gaps
     sun_alt = df_out.SUN_altitude_deg.copy()
     star_alt = df_out[f'{curr_obj}_altitude_deg'].copy()
@@ -193,9 +188,6 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
         fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 
-        # Render in PyQt6 WebView
-        html = fig.to_html(include_plotlyjs='cdn')
-        self.webview.setHtml(html)
 
 
     # --- POLAR PLOT ---
@@ -277,4 +269,5 @@ def makeplot(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     # --- RENDER PLOT ---
     html = fig.to_html(include_plotlyjs='cdn')
     self.webview.setHtml(html)
+
 
