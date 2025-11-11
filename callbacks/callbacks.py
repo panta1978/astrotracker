@@ -64,6 +64,20 @@ def set_time_type(self, curr_label):
 
 
 
+# --- Get Multi Values Routine ---
+def get_multi_values(multi_mode, self):
+    multi_values = []
+    for row in range(self.multitable.rowCount()):
+        combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+        if combo is not None:
+            if multi_mode == 'Multi Days':
+                multi_values.append(combo.date())
+            else:
+                multi_values.append(combo.currentText())  # get the selected text
+    return multi_values
+
+
+
 # --- UPDATE PLOT ---
 def update_plot(self):
 
@@ -76,14 +90,7 @@ def update_plot(self):
     curr_day = self.select_day.date().toString('yyyy-MM-dd')
 
     # Get parameters (multiple mode)
-    multi_values = []
-    for row in range(self.multitable.rowCount()):
-        combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
-        if combo is not None:
-            if multi_mode == 'Multi Days':
-                multi_values.append(combo.date().toString('yyyy-MM-dd'))
-            else:
-                multi_values.append(combo.currentText())  # get the selected text
+    multi_values = get_multi_values(multi_mode, self)
 
     # Objects to be checked
     if multi_mode == 'Multi Objects':
@@ -123,6 +130,7 @@ def update_plot(self):
 
     # Time info
     if multi_mode == 'Multi Days':
+        multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
         sel_days = multi_values
     else:
         sel_days = [curr_day]
@@ -158,13 +166,13 @@ def update_plot(self):
 
 
 
-# --- TIME STEP CHANGED
+# --- TIME STEP CHANGED ---
 def change_objparam(self):
     self.recalc = True
 
 
 
-# --- MULTI DATA SELECTION
+# --- MULTI DATA SELECTION ---
 def selmultidata(self):
 
     # Mode Type
@@ -189,6 +197,29 @@ def selmultidata(self):
     self.select_location.setEnabled(enabs[2])
     self.select_day.setEnabled(enabs[3])
 
+    # Table Rows
+    n_rows = self.multitable.rowCount()
+    n_rows_target = self.nrows.value()
+    if n_rows_target != n_rows: # Only makes sense if nr of object did not change
+        multi_values = get_multi_values(multi_mode, self)
+
+    # Manage Table
+    if multi_mode in ['Multi Objects', 'Multi Locations']:
+        if n_rows_target < n_rows:
+            multi_values = multi_values[:n_rows_target]
+        elif n_rows_target > n_rows:
+            multi_values = multi_values + multi_options[n_rows:n_rows_target]
+        else:
+            multi_values = multi_options[:n_rows_target]
+    elif multi_mode == 'Multi Days':
+        if n_rows_target < n_rows:
+            multi_values = multi_values[:n_rows_target]
+        elif n_rows_target > n_rows:
+
+            multi_values = multi_values + [multi_values[-1].addDays(i+1) for i in range(n_rows_target-n_rows)]
+        else:
+            multi_values = [QDate.currentDate().addDays(i) for i in range(n_rows_target)]
+
     # Adjust number of rows
     self.multitable.clearContents()
     self.multitable.setRowCount(self.nrows.value())
@@ -199,7 +230,11 @@ def selmultidata(self):
         for row in range(self.nrows.value()):
             combo = QComboBox()
             combo.addItems(multi_options)
-            combo.setCurrentIndex(ni)  # default to empty
+            try:
+                nj = multi_options.index(multi_values[ni])
+            except:
+                nj = ni
+            combo.setCurrentIndex(nj)
             combo.currentIndexChanged.connect(lambda index, r=row: change_objparam(self))
             combo.setMinimumHeight(24)  # makes it look better
             self.multitable.setCellWidget(row, 0, combo)
@@ -211,7 +246,7 @@ def selmultidata(self):
         for row in range(self.nrows.value()):
             dateedit = QDateEdit()
             dateedit.setDisplayFormat('dd/MM/yyyy')
-            dateedit.setDate(QDate.currentDate().addDays(ni))
+            dateedit.setDate(multi_values[ni])
             dateedit.setCalendarPopup(True)
             dateedit.dateChanged.connect(lambda index, r=row: change_objparam(self))
             dateedit.setMinimumHeight(24)
