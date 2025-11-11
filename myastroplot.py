@@ -4,9 +4,12 @@
 # This file is part of the Astrotracker project.
 # See the LICENSE.txt file in the project root for full license information.
 
+import os
+import tempfile
 import numpy as np
 import pandas as pd
 from datetime import datetime, date, timedelta
+from PyQt6.QtCore import QUrl
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
@@ -275,10 +278,11 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             name='Horizon', hoverinfo='skip', showlegend=False # optional: disable hover
         ))
 
-
-    # --- RENDER PLOT ---
-    html = fig.to_html(include_plotlyjs='cdn')
-    self.webview.setHtml(html)
+    # Render in PyQt6 WebView
+    tmp_dir = tempfile.gettempdir()
+    html_path = os.path.join(tmp_dir, 'plot.html')
+    fig.write_html(html_path, include_plotlyjs='directory')
+    self.webview.load(QUrl.fromLocalFile(html_path))
 
 
 
@@ -540,6 +544,8 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         ))
 
     # Render in PyQt6 WebView
-    html = fig.to_html(include_plotlyjs='cdn')
-    self.webview.setHtml(html)
+    tmp_dir = tempfile.gettempdir()
+    html_path = os.path.join(tmp_dir, 'plot.html')
+    fig.write_html(html_path, include_plotlyjs='directory')
+    self.webview.load(QUrl.fromLocalFile(html_path))
 

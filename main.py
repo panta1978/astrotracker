@@ -8,12 +8,14 @@ import sys
 from functools import partial
 import pandas as pd
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget, QMessageBox,
     QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox
 )
 from PyQt6.QtGui import QAction, QFont
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
+from astroquery.simbad import Simbad
+Simbad.TIMEOUT = 2
 import importlib
 import myastrolib as myal
 import myastroplot as myap
@@ -341,22 +343,22 @@ class MainWindow(QMainWindow):
         self.actions['Civil'].setChecked(True)
 
         # Stars Menu
-        star_menu = menubar.addMenu('Stars')
+        self.star_menu = menubar.addMenu('Stars')
         star_add = QAction('Add Stars', self)
         star_add.triggered.connect(lambda: cb.call_add_stars(self))
-        star_menu.addAction(star_add)
+        self.star_menu.addAction(star_add)
         star_remove = QAction('Remove Stars', self)
         star_remove.triggered.connect(lambda: cb.call_remove_stars(self))
-        star_menu.addAction(star_remove)
+        self.star_menu.addAction(star_remove)
 
         # Locations Menu
-        loc_menu = menubar.addMenu('Locations')
+        self.loc_menu = menubar.addMenu('Locations')
         loc_add = QAction('Add Locations', self)
         loc_add.triggered.connect(lambda: cb.call_add_locations(self))
-        loc_menu.addAction(loc_add)
+        self.loc_menu.addAction(loc_add)
         loc_remove = QAction('Remove Locations', self)
         loc_remove.triggered.connect(lambda: cb.call_remove_locations(self))
-        loc_menu.addAction(loc_remove)
+        self.loc_menu.addAction(loc_remove)
 
         # Info Menu
         loc_info = menubar.addMenu('Info')
@@ -364,9 +366,19 @@ class MainWindow(QMainWindow):
         loc_about.triggered.connect(lambda: cb.show_about_dialog(self))
         loc_info.addAction(loc_about)
 
-
         # Initial Plot
         cb.update_plot(self)
+
+        # Check if online
+        try:
+            Simbad.add_votable_fields('main_id')
+            self.isonline = True
+        except:
+            self.isonline = False
+            QMessageBox.warning(self, 'Offline', 'You are offline. Adding Stars / Locations features disabled')
+            self.star_menu.setEnabled(False)
+            self.loc_menu.setEnabled(False)
+
 
 
 # --- MAIN APP EXECUTION ---

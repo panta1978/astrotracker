@@ -18,7 +18,6 @@ from astropy.coordinates import SkyCoord
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 Simbad.TIMEOUT = 2
-Simbad.add_votable_fields('main_id')
 import warnings
 from erfa import ErfaWarning
 warnings.simplefilter('ignore', ErfaWarning)
@@ -61,11 +60,11 @@ def get_location_coord(sel_location):
 def get_star_info(sel_star):
 
     # Init output structures
+    Simbad.add_votable_fields('main_id')
     try:
         simbad_query = Simbad.query_object(sel_star)
         vizier_name = simbad_query['main_id'][0].replace('*', '').strip()
     except:
-        print(f'Star {sel_star} not found. Skipped')
         return [], [], [], [], []
 
     # Set-up Star catalogue
