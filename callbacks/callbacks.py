@@ -197,6 +197,14 @@ def selmultidata(self):
     self.select_location.setEnabled(enabs[2])
     self.select_day.setEnabled(enabs[3])
 
+    # Enable Day Night and Horizon Filters
+    if multi_mode == 'Single Data':
+        self.daynight.setEnabled(True)
+        self.horizonview.setEnabled(True)
+    else:
+        self.daynight.setEnabled(False)
+        self.horizonview.setEnabled(False)
+
     # Table Rows
     n_rows = self.multitable.rowCount()
     n_rows_target = self.nrows.value()

@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget,
     QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox
 )
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QFont
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
 import importlib
@@ -115,6 +115,7 @@ class MainWindow(QMainWindow):
 
         # Graph Selection
         label_graph = QLabel('Graph Type:')
+        label_graph.setFont(QFont('', -1, QFont.Weight.Bold))
         label_graph.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         sidemenu.addWidget(label_graph)
 
@@ -244,6 +245,7 @@ class MainWindow(QMainWindow):
 
         # Multi Data
         label_selmultidata = QLabel('Multi Data:')
+        label_selmultidata.setFont(QFont('', -1, QFont.Weight.Bold))
         label_selmultidata.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         multidatamenu.addWidget(label_selmultidata)
 

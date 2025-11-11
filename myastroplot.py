@@ -322,8 +322,8 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
 
     # Case 3 - Multi Days
     if multi_mode == 'Multi Days':
-        for curr_day in multi_values:
-            dfos = df_out[df_out['day_sel'] == curr_day]
+        for (nd, curr_day) in enumerate(multi_values):
+            dfos = df_out[df_out['n_day'] == nd + 1]
             dfos = dfos_get(dfos, curr_obj)
             df_outspl[curr_day] = dfos
         curr_day = 'Multiple Days'
