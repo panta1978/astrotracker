@@ -186,7 +186,7 @@ def selmultidata(self):
     # Mode Type
     multi_mode = self.selmultidata.currentText()
 
-    # Enable multitable and upper buttons
+    # Enable / Disable multitable and upper buttons
     enabs = [True, True, True, True]
     if multi_mode == 'Single Data':
         enabs[0] = False
@@ -205,13 +205,17 @@ def selmultidata(self):
     self.select_location.setEnabled(enabs[2])
     self.select_day.setEnabled(enabs[3])
 
-    # Enable Day Night and Horizon Filters
+    # Enable / Disable other controls
     if multi_mode == 'Single Data':
         self.daynight.setEnabled(True)
         self.horizonview.setEnabled(True)
+        self.selcolour.setEnabled(False)
+        self.nrows.setEnabled(False)
     else:
         self.daynight.setEnabled(False)
         self.horizonview.setEnabled(False)
+        self.selcolour.setEnabled(True)
+        self.nrows.setEnabled(True)
 
     # Table Rows
     n_rows = self.multitable.rowCount()

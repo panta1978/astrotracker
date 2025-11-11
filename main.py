@@ -274,6 +274,7 @@ class MainWindow(QMainWindow):
             'Magma (Sequential)'
         ])
         self.selcolour.setFixedWidth(180)
+        self.selcolour.setEnabled(False)
         multidatamenu.addWidget(self.selcolour)
         multidatamenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
@@ -287,6 +288,7 @@ class MainWindow(QMainWindow):
         self.nrows.setSingleStep(1)
         self.nrows.setValue(self.multimin)
         self.nrows.valueChanged.connect(lambda: cb.selmultidata(self))
+        self.nrows.setEnabled(False)
         nrows.addWidget(self.nrows)
         nrows.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
         nrows_widget = QWidget()
