@@ -258,6 +258,20 @@ class MainWindow(QMainWindow):
         self.selmultidata.setFixedWidth(120)
         self.selmultidata.currentIndexChanged.connect(lambda: cb.selmultidata(self))
         multidatamenu.addWidget(self.selmultidata)
+        multidatamenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
+
+        # Colour Selector
+        label_selcolour = QLabel('Colour Scheme:')
+        label_selcolour.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        multidatamenu.addWidget(label_selcolour)
+        self.selcolour = QComboBox()
+        self.selcolour.addItems([
+            'Default (Categorical)',
+            'Magma (Sequential)'
+        ])
+        self.selcolour.setFixedWidth(180)
+        multidatamenu.addWidget(self.selcolour)
+        multidatamenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
         # Table Height Menu
         nrows = QHBoxLayout()

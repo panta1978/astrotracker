@@ -150,7 +150,7 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     if not('Polar' in plot_type):
 
         # Create subplots: 2 rows, 1 col
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, row_heights=[0.5, 0.5],
+        fig = make_subplots(rows=2, cols=1, vertical_spacing=0.1, row_heights=[0.5, 0.5],
             subplot_titles=[
                 f'{curr_obj} in {curr_location} on {curr_day} - {label1} ({self.sel_time} Time)',
                 f'{curr_obj} in {curr_location} on {curr_day} - {label2} ({self.sel_time} Time)'
@@ -168,7 +168,11 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
                 name=position), row=1, col=1)
 
         # Axes 1st ROW
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=1, col=1, tickformat='%H:%M', nticks=20)
+        fig.update_xaxes(
+            showticklabels=True, matches='x',
+            range=[x_gr.min(), x_gr.max()],
+            row=1, col=1, tickformat='%H:%M', nticks=20
+        )
         fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
@@ -186,7 +190,11 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 3)
-        fig.update_xaxes(range=[x_gr.min(), x_gr.max()], row=2, col=1, tickformat='%H:%M', nticks=20)
+        fig.update_xaxes(
+            showticklabels=True, matches='x',
+            range=[x_gr.min(), x_gr.max()],
+            row=2, col=1, tickformat='%H:%M', nticks=20
+        )
         fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
         fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 
@@ -402,14 +410,18 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     )
 
     # Prepare colours
-    graphcols = px.colors.qualitative.Plotly
-    #graphcols = pc.sample_colorscale(px.colors.sequential.Magma, 10)
+    if self.selcolour.currentText() == 'Default (Categorical)':
+        n_colours = 10
+        graphcols = px.colors.qualitative.Plotly
+    else:
+        n_colours = len(multi_values)
+        graphcols = pc.sample_colorscale(px.colors.sequential.Magma, n_colours)
 
     # --- 2-AXIS PLOT ---
     if not('Polar' in plot_type):
 
         # Create subplots: 2 rows, 1 col
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, row_heights=[0.5, 0.5],
+        fig = make_subplots(rows=2, cols=1, vertical_spacing=0.1, row_heights=[0.5, 0.5],
             subplot_titles=[
                 f'{curr_obj_txt} in {curr_location} on {curr_day} - {label1} ({self.sel_time} Time)',
                 f'{curr_obj_txt} in {curr_location} on {curr_day} - {label2} ({self.sel_time} Time)'
@@ -420,19 +432,23 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
             fig.add_trace(go.Scatter(x=x_gr[multi_value], y=y1s[multi_value], mode='lines',
-                line=dict(color=graphcols[nv], width=1),
+                line=dict(color=graphcols[nv], width=2),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value), row=1, col=1)
 
         # Axes 1st ROW
-        fig.update_xaxes(range=[x_gr[multi_value].min(), x_gr[multi_value].max()], row=1, col=1, tickformat='%H:%M', nticks=20)
+        fig.update_xaxes(
+            showticklabels=True, matches='x',
+            range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
+            row=1, col=1, tickformat='%H:%M', nticks=20
+        )
         fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
             fig.add_trace(go.Scatter(x=x_gr[multi_value], y=y2s[multi_value], mode='lines',
-                line=dict(color=graphcols[nv % 10], width=1),
+                line=dict(color=graphcols[nv % n_colours], width=2),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value, showlegend=False), row=2, col=1)
 
@@ -441,7 +457,11 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 3)
-        fig.update_xaxes(range=[x_gr[multi_value].min(), x_gr[multi_value].max()], row=2, col=1, tickformat='%H:%M', nticks=20)
+        fig.update_xaxes(
+            showticklabels=True, matches='x',
+            range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
+            row=2, col=1, tickformat='%H:%M', nticks=20
+        )
         fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
         fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 
@@ -505,7 +525,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
             fig.add_trace(go.Scatterpolar(r=y1s[multi_value], theta=y2s[multi_value], mode='lines',
-                line=dict(color=graphcols[nv % 10], width=1),
+                line=dict(color=graphcols[nv % n_colours], width=2),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value)
             )
@@ -515,7 +535,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         r_circle = np.full_like(theta_circle, 90)  # constant radius = 90°
         fig.add_trace(go.Scatterpolar(
             r=r_circle, theta=theta_circle,
-            mode='lines', line=dict(color='black', width=1.5),
+            mode='lines', line=dict(color='black', width=1.5, dash='dot'),
             name='Horizon', hoverinfo='skip', showlegend=False # optional: disable hover
         ))
 
