@@ -9,6 +9,7 @@
 import os
 import pandas as pd
 import sqlite3
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
@@ -33,8 +34,15 @@ importlib.reload(remove_locations)
 # --- INIT ---
 def init_data(self):
 
+    # Recreate App path if it does not exist
+    if os.name == 'nt':
+        app_dir = Path(os.getenv('LOCALAPPDATA')) / 'Astrotracker'
+    else:
+        app_dir = Path.home() / '.Astrotracker'
+    app_dir.mkdir(parents=True, exist_ok=True)
+
     # Recreate DB if it does not exist
-    self.db_path = 'astrodb.db'
+    self.db_path = app_dir / 'astrodb.db'
     if not(os.path.exists(self.db_path)):
         sql_file = 'db_backup.sql'
         with sqlite3.connect(self.db_path) as conn:
