@@ -48,6 +48,8 @@ class MainWindow(QMainWindow):
             self.recalc = True
             self.multimin = 2
             self.multimax = 18
+            self.day_min = QDate(1900, 1, 1)
+            self.day_max = QDate(2100, 12, 31)
             cb.init_data(self)
             QTimer.singleShot(0, self.showMaximized)
 
@@ -90,9 +92,9 @@ class MainWindow(QMainWindow):
             top_row.addWidget(label_day)
 
             self.select_day = QDateEdit()
-            self.select_day.setDate(QDate.currentDate())
-            self.select_day.setMinimumDate(QDate(1900, 1, 1))
-            self.select_day.setMaximumDate(QDate(2100, 12, 31))
+            self.select_day.setDate(myap.capdate(QDate.currentDate(), self.day_min, self.day_max))
+            self.select_day.setMinimumDate(self.day_min)
+            self.select_day.setMaximumDate(self.day_max)
             self.select_day.setCalendarPopup(True)
             self.select_day.dateTimeChanged.connect(lambda: cb.change_objparam(self))
             top_row.addWidget(self.select_day)

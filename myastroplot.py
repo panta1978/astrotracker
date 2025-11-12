@@ -548,3 +548,13 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     fig.write_html(html_path, include_plotlyjs='directory')
     self.webview.load(QUrl.fromLocalFile(html_path))
 
+
+
+# --- Clip Date ---
+def capdate(curr_date, date_min, date_max):
+    if curr_date < date_min:
+        return date_min
+    elif curr_date > date_max:
+        return date_max
+    else:
+        return curr_date

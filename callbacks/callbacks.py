@@ -259,17 +259,23 @@ def selmultidata(self):
         if n_rows_target < n_rows:
             multi_values = multi_values[:n_rows_target]
         elif n_rows_target > n_rows:
-            multi_values = multi_values + multi_options[n_rows:n_rows_target]
+            nsel = [min(n, len(multi_options)-1) for n in range(n_rows, n_rows_target)] # Cap nsel to prevent overflows
+            multi_values = multi_values + [multi_options[i] for i in nsel]
         else:
-            multi_values = multi_options[:n_rows_target]
+            nsel = [min(n, len(multi_options)-1) for n in range(0, n_rows_target)] # Cap nsel to prevent overflows
+            multi_values = [multi_options[i] for i in nsel]
     elif multi_mode == 'Multi Days':
         if n_rows_target < n_rows:
             multi_values = multi_values[:n_rows_target]
         elif n_rows_target > n_rows:
-
-            multi_values = multi_values + [multi_values[-1].addDays(i+1) for i in range(n_rows_target-n_rows)]
+            multi_values = (multi_values +
+                [myap.capdate(multi_values[-1].addDays(i+1), self.day_min, self.day_max)
+                for i in range(n_rows_target-n_rows)])
         else:
-            multi_values = [QDate.currentDate().addDays(i) for i in range(n_rows_target)]
+            multi_values = [
+                myap.capdate(QDate.currentDate().addDays(i), self.day_min, self.day_max)
+                for i in range(n_rows_target)
+            ]
 
     # Adjust number of rows
     self.multitable.clearContents()
@@ -298,6 +304,8 @@ def selmultidata(self):
             dateedit = QDateEdit()
             dateedit.setDisplayFormat('dd/MM/yyyy')
             dateedit.setDate(multi_values[ni])
+            dateedit.setMinimumDate(self.day_min)
+            dateedit.setMaximumDate(self.day_max)
             dateedit.setCalendarPopup(True)
             dateedit.dateChanged.connect(lambda index, r=row: change_objparam(self))
             dateedit.setMinimumHeight(24)

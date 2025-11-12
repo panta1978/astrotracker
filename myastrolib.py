@@ -93,8 +93,7 @@ def get_coords(
         sel_ssbodies,
         sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec,
         loc_names, lats, lons, tz_names, sel_time,
-        sel_days, t_min, t_max, t_delta
-):
+        sel_days, t_min, t_max, t_delta):
 
     df_s = [] # Init output structure
 
