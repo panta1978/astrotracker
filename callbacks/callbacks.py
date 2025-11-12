@@ -7,6 +7,7 @@
 # --- CALLBACKS USED BY MAIN FILE ---
 
 import os
+import sys
 import pandas as pd
 import sqlite3
 from pathlib import Path
@@ -30,6 +31,36 @@ importlib.reload(remove_stars)
 importlib.reload(remove_locations)
 
 
+# DB Path
+def resource_path(relative_path):
+        try: # Compiled Version
+            base_path = sys._MEIPASS
+        except AttributeError: # Developer mode
+            base_path = os.path.abspath('.')
+        return os.path.join(base_path, relative_path)
+
+# Read DB Routine
+def read_db(self):
+    conn = None
+    try:
+        conn = sqlite3.connect(self.db_path)
+        self.df_loc = pd.read_sql_query('SELECT * FROM LOCATIONS ORDER BY location', conn)
+        self.df_stars = pd.read_sql_query('SELECT * FROM STARS ORDER BY star', conn)
+    finally:
+        if conn is not None:
+            conn.close()
+
+# Restore DB Routine
+def restore_db(self):
+    sql_file = resource_path('db_backup.sql')
+    with sqlite3.connect(self.db_path) as conn:
+        cursor = conn.cursor()
+        with open(sql_file, 'r', encoding='utf-8') as f:
+            sql_script = f.read()
+        cursor.executescript(sql_script)
+        conn.commit()
+
+
 
 # --- INIT ---
 def init_data(self):
@@ -41,21 +72,21 @@ def init_data(self):
         app_dir = Path.home() / '.Astrotracker'
     app_dir.mkdir(parents=True, exist_ok=True)
 
-    # Recreate DB if it does not exist
+    # Recreate DB if it does not exist or if it is faulty
     self.db_path = app_dir / 'astrodb.db'
     if not(os.path.exists(self.db_path)):
-        sql_file = 'db_backup.sql'
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            with open(sql_file, 'r', encoding='utf-8') as f:
-                sql_script = f.read()
-            cursor.executescript(sql_script)
-            conn.commit()
+        restore_db(self)
+        read_db(self)
+    else:
+        try:
+            read_db(self)
+        except:
+            if os.path.exists(self.db_path):
+                os.remove(self.db_path)
+            restore_db(self)
+            read_db(self)
 
-    # Init Data
-    with sqlite3.connect(self.db_path) as conn:
-        self.df_loc = pd.read_sql_query('SELECT * FROM LOCATIONS ORDER BY location', conn)
-        self.df_stars = pd.read_sql_query('SELECT * FROM STARS ORDER BY star', conn)
+    # Other parameters
     self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN']
     self.df_out = []
     self.sel_time = 'Civil'

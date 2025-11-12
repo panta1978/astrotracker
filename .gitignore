@@ -3,6 +3,7 @@
 .venv
 *.db
 /test/
+/assets/source/
 
 # --- PyInstaller build output ---
 /build/
