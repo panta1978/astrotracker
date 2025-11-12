@@ -10,9 +10,9 @@ from functools import partial
 import pandas as pd
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget, QMessageBox,
-    QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox
+    QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, QDateEdit, QCheckBox, QTimeEdit, QSpinBox, QSplashScreen
 )
-from PyQt6.QtGui import QAction, QFont, QIcon
+from PyQt6.QtGui import QAction, QFont, QIcon, QPixmap
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
 from astroquery.simbad import Simbad
@@ -396,8 +396,19 @@ if __name__ == '__main__':
         base_path = sys._MEIPASS  # PyInstaller temp dir
     else:
         base_path = os.path.dirname(__file__)
+
+    # Splashscreen
+    splash_path = os.path.join(base_path, 'assets', 'astrotracker.png')
+    pixmap = QPixmap(splash_path)
+    scaled_pixmap = pixmap.scaled(500, 500, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    splash = QSplashScreen(scaled_pixmap, Qt.WindowType.WindowStaysOnTopHint)
+    splash.show()
+
+    # Force Qt to process splash screen immediately
+    app.processEvents()
     icon_path = os.path.join(base_path, 'assets', 'astrotracker.ico')
     app.setWindowIcon(QIcon(icon_path))
     window = MainWindow()
+    QTimer.singleShot(200, splash.close)
     window.show()
     sys.exit(app.exec())
