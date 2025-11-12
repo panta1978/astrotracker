@@ -7,12 +7,14 @@
 # --- CALLBACKS USED BY MAIN FILE ---
 
 import os
+import sys
 import pandas as pd
 import sqlite3
+from pathlib import Path
 from PyQt6.QtWidgets import (
-    QFileDialog, QMessageBox, QApplication
+    QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QDate
 import importlib
 import myastrolib as myal
 import myastroplot as myap
@@ -29,25 +31,62 @@ importlib.reload(remove_stars)
 importlib.reload(remove_locations)
 
 
+# DB Path
+def resource_path(relative_path):
+        try: # Compiled Version
+            base_path = sys._MEIPASS
+        except AttributeError: # Developer mode
+            base_path = os.path.abspath('.')
+        return os.path.join(base_path, relative_path)
+
+# Read DB Routine
+def read_db(self):
+    conn = None
+    try:
+        conn = sqlite3.connect(self.db_path)
+        self.df_loc = pd.read_sql_query('SELECT * FROM LOCATIONS ORDER BY location', conn)
+        self.df_stars = pd.read_sql_query('SELECT * FROM STARS ORDER BY star', conn)
+    finally:
+        if conn is not None:
+            conn.close()
+
+# Restore DB Routine
+def restore_db(self):
+    sql_file = resource_path('db_backup.sql')
+    with sqlite3.connect(self.db_path) as conn:
+        cursor = conn.cursor()
+        with open(sql_file, 'r', encoding='utf-8') as f:
+            sql_script = f.read()
+        cursor.executescript(sql_script)
+        conn.commit()
+
+
 
 # --- INIT ---
 def init_data(self):
 
-    # Recreate DB if it does not exist
-    self.db_path = 'astrodb.db'
-    if not(os.path.exists(self.db_path)):
-        sql_file = 'db_backup.sql'
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            with open(sql_file, 'r', encoding='utf-8') as f:
-                sql_script = f.read()
-            cursor.executescript(sql_script)
-            conn.commit()
+    # Recreate App path if it does not exist
+    if os.name == 'nt':
+        app_dir = Path(os.getenv('LOCALAPPDATA')) / 'Astrotracker'
+    else:
+        app_dir = Path.home() / '.Astrotracker'
+    app_dir.mkdir(parents=True, exist_ok=True)
 
-    # Init Data
-    with sqlite3.connect(self.db_path) as conn:
-        self.df_loc = pd.read_sql_query('SELECT * FROM LOCATIONS ORDER BY location', conn)
-        self.df_stars = pd.read_sql_query('SELECT * FROM STARS ORDER BY star', conn)
+    # Recreate DB if it does not exist or if it is faulty
+    self.db_path = app_dir / 'astrodb.db'
+    if not(os.path.exists(self.db_path)):
+        restore_db(self)
+        read_db(self)
+    else:
+        try:
+            read_db(self)
+        except:
+            if os.path.exists(self.db_path):
+                os.remove(self.db_path)
+            restore_db(self)
+            read_db(self)
+
+    # Other parameters
     self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN']
     self.df_out = []
     self.sel_time = 'Civil'
@@ -64,45 +103,76 @@ def set_time_type(self, curr_label):
 
 
 
+# --- Get Multi Values Routine ---
+def get_multi_values(multi_mode, self):
+    multi_values = []
+    for row in range(self.multitable.rowCount()):
+        combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+        if combo is not None:
+            if multi_mode == 'Multi Days':
+                multi_values.append(combo.date())
+            else:
+                multi_values.append(combo.currentText())  # get the selected text
+    return multi_values
+
+
+
 # --- UPDATE PLOT ---
 def update_plot(self):
 
-    # Get parameters
+    # Mode Type
+    multi_mode = self.selmultidata.currentText()
+
+    # Get parameters (single mode)
     curr_obj = self.select_object.currentText()
     curr_location = self.select_location.currentText()
     curr_day = self.select_day.date().toString('yyyy-MM-dd')
 
+    # Get parameters (multiple mode)
+    multi_values = get_multi_values(multi_mode, self)
+
     # Objects to be checked
-    if curr_obj in self.ssobj:
-        if curr_obj == 'SUN':
-            sel_ssbodies = ['SUN']
-        else:
-            sel_ssbodies = ['SUN', curr_obj]
-        sel_stars = []
-        sel_stars_ra0 = []
-        sel_stars_dec0 = []
-        sel_stars_pm_ra = []
-        sel_stars_pm_dec = []
+    if multi_mode == 'Multi Objects':
+        sel_ssbodies = [m for m in multi_values if m in self.ssobj]
+        sel_stars = [m for m in multi_values if m not in self.ssobj]
     else:
-        sel_ssbodies = ['SUN']
-        sel_stars = [curr_obj]
-        sel_star_ra0 = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['ra0']
-        sel_stars_ra0 = [sel_star_ra0]
-        sel_star_dec0 = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['dec0']
-        sel_stars_dec0 = [sel_star_dec0]
-        sel_star_pm_ra = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['pm_ra']
-        sel_stars_pm_ra = [sel_star_pm_ra]
-        sel_star_pm_dec = self.df_stars.loc[self.df_stars['star'] == curr_obj].iloc[0]['pm_dec']
-        sel_stars_pm_dec = [sel_star_pm_dec]
+        if curr_obj in self.ssobj:
+            if curr_obj == 'SUN':
+                sel_ssbodies = ['SUN']
+            else:
+                sel_ssbodies = ['SUN', curr_obj]
+            sel_stars = []
+        else:
+            sel_ssbodies = ['SUN']
+            sel_stars = [curr_obj]
+
+    sel_stars_ra0 = [] ; sel_stars_dec0 = []
+    sel_stars_pm_ra = [] ; sel_stars_pm_dec = []
+    for sel_star in sel_stars:
+        curr_rec = self.df_stars.loc[self.df_stars['star'] == sel_star].iloc[0]
+        sel_stars_ra0.append(curr_rec['ra0'])
+        sel_stars_dec0.append(curr_rec['dec0'])
+        sel_stars_pm_ra.append(curr_rec['pm_ra'])
+        sel_stars_pm_dec.append(curr_rec['pm_dec'])
 
     # Current position info
-    row = self.df_loc.loc[self.df_loc['location'] == curr_location].iloc[0]
-    lats = [row['latitude']]
-    lons = [row['longitude']]
-    tz_names = [row['time_zone']]
+    if multi_mode == 'Multi Locations':
+        sel_locations = multi_values
+    else:
+        sel_locations = [curr_location]
+    lats = [] ; lons = [] ; tz_names = []
+    for sel_location in sel_locations:
+        row = self.df_loc.loc[self.df_loc['location'] == sel_location].iloc[0]
+        lats.append(row['latitude'])
+        lons.append(row['longitude'])
+        tz_names.append(row['time_zone'])
 
     # Time info
-    sel_days = [curr_day]
+    if multi_mode == 'Multi Days':
+        multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
+        sel_days = multi_values
+    else:
+        sel_days = [curr_day]
 
     # Get Data
     if self.recalc:
@@ -113,7 +183,7 @@ def update_plot(self):
             stars_dec0 = sel_stars_dec0,
             stars_pm_ra = sel_stars_pm_ra,
             stars_pm_dec = sel_stars_pm_dec,
-            loc_names= [curr_location],
+            loc_names= sel_locations,
             lats = lats,
             lons = lons,
             tz_names = tz_names,
@@ -126,14 +196,122 @@ def update_plot(self):
 
     # Create Graph
     plot_type = self.select_graph.currentText()
-    myap.makeplot(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
+    if multi_mode == 'Single Data':
+        myap.makeplot_single(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
+    else:
+        myap.makeplot_multi(self.df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self)
     self.export_button.setEnabled(True)
     self.recalc = False # If no input parameter changes, do not recalculate objects' positions
 
 
 
-# --- TIME STEP CHANGED
+# --- TIME STEP CHANGED ---
 def change_objparam(self):
+    self.recalc = True
+
+
+
+# --- MULTI DATA SELECTION ---
+def selmultidata(self):
+
+    # Mode Type
+    multi_mode = self.selmultidata.currentText()
+
+    # Enable / Disable multitable and upper buttons
+    enabs = [True, True, True, True]
+    if multi_mode == 'Single Data':
+        enabs[0] = False
+        multi_options = []
+    if multi_mode == 'Multi Objects':
+        enabs[1] = False
+        multi_options = self.ssobj + self.df_stars.star.tolist()
+    if multi_mode == 'Multi Locations':
+        enabs[2] = False
+        multi_options = self.df_loc.location.tolist()
+    if multi_mode == 'Multi Days':
+        enabs[3] = False
+        multi_options = []
+    self.multitable.setEnabled(enabs[0])
+    self.select_object.setEnabled(enabs[1])
+    self.select_location.setEnabled(enabs[2])
+    self.select_day.setEnabled(enabs[3])
+
+    # Enable / Disable other controls
+    if multi_mode == 'Single Data':
+        self.daynight.setEnabled(True)
+        self.horizonview.setEnabled(True)
+        self.selcolour.setEnabled(False)
+        self.nrows.setEnabled(False)
+    else:
+        self.daynight.setEnabled(False)
+        self.horizonview.setEnabled(False)
+        self.selcolour.setEnabled(True)
+        self.nrows.setEnabled(True)
+
+    # Table Rows
+    n_rows = self.multitable.rowCount()
+    n_rows_target = self.nrows.value()
+    if n_rows_target != n_rows: # Only makes sense if nr of object did not change
+        multi_values = get_multi_values(multi_mode, self)
+
+    # Manage Table
+    if multi_mode in ['Multi Objects', 'Multi Locations']:
+        if n_rows_target < n_rows:
+            multi_values = multi_values[:n_rows_target]
+        elif n_rows_target > n_rows:
+            nsel = [min(n, len(multi_options)-1) for n in range(n_rows, n_rows_target)] # Cap nsel to prevent overflows
+            multi_values = multi_values + [multi_options[i] for i in nsel]
+        else:
+            nsel = [min(n, len(multi_options)-1) for n in range(0, n_rows_target)] # Cap nsel to prevent overflows
+            multi_values = [multi_options[i] for i in nsel]
+    elif multi_mode == 'Multi Days':
+        if n_rows_target < n_rows:
+            multi_values = multi_values[:n_rows_target]
+        elif n_rows_target > n_rows:
+            multi_values = (multi_values +
+                [myap.capdate(multi_values[-1].addDays(i+1), self.day_min, self.day_max)
+                for i in range(n_rows_target-n_rows)])
+        else:
+            multi_values = [
+                myap.capdate(QDate.currentDate().addDays(i), self.day_min, self.day_max)
+                for i in range(n_rows_target)
+            ]
+
+    # Adjust number of rows
+    self.multitable.clearContents()
+    self.multitable.setRowCount(self.nrows.value())
+
+    # Set Table options (cases: Objects / Locations)
+    if multi_mode in ['Multi Objects', 'Multi Locations']:
+        ni = 0
+        for row in range(self.nrows.value()):
+            combo = QComboBox()
+            combo.addItems(multi_options)
+            try:
+                nj = multi_options.index(multi_values[ni])
+            except:
+                nj = ni
+            combo.setCurrentIndex(nj)
+            combo.currentIndexChanged.connect(lambda index, r=row: change_objparam(self))
+            combo.setMinimumHeight(24)  # makes it look better
+            self.multitable.setCellWidget(row, 0, combo)
+            ni += 1
+
+    # Set Table options (cases: Objects / Locations)
+    if multi_mode == 'Multi Days':
+        ni = 0
+        for row in range(self.nrows.value()):
+            dateedit = QDateEdit()
+            dateedit.setDisplayFormat('dd/MM/yyyy')
+            dateedit.setDate(multi_values[ni])
+            dateedit.setMinimumDate(self.day_min)
+            dateedit.setMaximumDate(self.day_max)
+            dateedit.setCalendarPopup(True)
+            dateedit.dateChanged.connect(lambda index, r=row: change_objparam(self))
+            dateedit.setMinimumHeight(24)
+            self.multitable.setCellWidget(row, 0, dateedit)
+            ni += 1
+
     self.recalc = True
 
 

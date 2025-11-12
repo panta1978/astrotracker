@@ -38,7 +38,10 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
-If you are using Windows and prefer a standalone executable, check the Releases section for .exe builds (if available)
+To compile the version from the source code, run compile.bat.
+
+If you are using Windows and prefer a standalone executable, check the Releases section for .exe builds (available
+from version v1.2 onwards).
 
 ---
 
@@ -46,7 +49,7 @@ If you are using Windows and prefer a standalone executable, check the Releases 
 
 Astrotracker is distributed under the **MIT License** starting from **v1.1**.
 
-```java
+```txt
 MIT License  
 Copyright (c) 2025 Stefano Pantaleoni
 ```
