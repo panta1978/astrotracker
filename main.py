@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
             'Equatorial (Polar, North)',
             'Equatorial (Polar, South)'
         ])
-        self.select_graph.setFixedWidth(150)
+        self.select_graph.setFixedWidth(170)
         sidemenu.addWidget(self.select_graph)
         sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 

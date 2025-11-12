@@ -1,6 +1,17 @@
 # Excluded files
-*.db
 .idea
+.venv
+*.db
+/test/
+
+# --- PyInstaller build output ---
+/build/
+/dist/
+*.spec
+
+# --- Python cache ---
 __pycache__/
-test
+*.pyc
+*.pyo
+*.pyd
 

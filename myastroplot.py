@@ -289,7 +289,6 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 # --- LAUNCH PLOT (SINGLE) ---
 def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self):
 
-    # multi_mode can be 'Single Data', 'Multi Objects', 'Multi Locations', 'Multi Days'
     # Init new structure (that will be filtered)
     df_outspl = {}
 
