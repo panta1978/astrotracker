@@ -26,12 +26,16 @@ importlib.reload(myal)
 importlib.reload(myap)
 importlib.reload(cb)
 
+# Environment (True for compiled version, False for development)
+IS_FROZEN = getattr(sys, 'frozen', False)
+
+
 
 class MainWindow(QMainWindow):
 
-
     # --- MAIN WINDOW ---
     def __init__(self):
+
         ssobj: list[str]
         df_stars: pd.DataFrame
         df_loc: pd.DataFrame
@@ -400,17 +404,21 @@ if __name__ == '__main__':
         base_path = os.path.dirname(__file__)
 
     # Splashscreen
-    splash_path = os.path.join(base_path, 'assets', 'astrotracker.png')
-    pixmap = QPixmap(splash_path)
-    scaled_pixmap = pixmap.scaled(500, 500, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    splash = QSplashScreen(scaled_pixmap, Qt.WindowType.WindowStaysOnTopHint)
-    splash.show()
+    if IS_FROZEN:
+        splash_path = os.path.join(base_path, 'assets', 'astrotracker.png')
+        pixmap = QPixmap(splash_path)
+        scaled_pixmap = pixmap.scaled(500, 500, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        splash = QSplashScreen(scaled_pixmap, Qt.WindowType.WindowStaysOnTopHint)
+        splash.show()
 
-    # Force Qt to process splash screen immediately
     app.processEvents()
     icon_path = os.path.join(base_path, 'assets', 'astrotracker.ico')
     app.setWindowIcon(QIcon(icon_path))
     window = MainWindow()
-    QTimer.singleShot(200, splash.close)
+
+    # Force Qt to process splash screen immediately
+    if IS_FROZEN:
+        QTimer.singleShot(200, splash.close)
+    
     window.show()
     sys.exit(app.exec())
