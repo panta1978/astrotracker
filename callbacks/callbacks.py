@@ -134,7 +134,11 @@ def update_plot(self):
     # Objects to be checked
     if multi_mode == 'Multi Objects':
         sel_ssbodies = [m for m in multi_values if m in self.ssobj]
+        if not 'SUN' in sel_ssbodies:
+            sel_ssbodies = ['SUN'] + sel_ssbodies
         sel_stars = [m for m in multi_values if m not in self.ssobj]
+         #if not('SUN' in multi_values):
+         #   multi_values = ['SUN', multi_values]
     else:
         if curr_obj in self.ssobj:
             if curr_obj == 'SUN':
@@ -238,13 +242,13 @@ def selmultidata(self):
 
     # Enable / Disable other controls
     if multi_mode == 'Single Data':
-        self.daynight.setEnabled(True)
-        self.horizonview.setEnabled(True)
+        #self.daynight.setEnabled(True)
+        #self.horizonview.setEnabled(True)
         self.selcolour.setEnabled(False)
         self.nrows.setEnabled(False)
     else:
-        self.daynight.setEnabled(False)
-        self.horizonview.setEnabled(False)
+        #self.daynight.setEnabled(False)
+        #self.horizonview.setEnabled(False)
         self.selcolour.setEnabled(True)
         self.nrows.setEnabled(True)
 
