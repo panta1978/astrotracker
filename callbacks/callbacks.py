@@ -104,7 +104,7 @@ def set_time_type(self, curr_label):
 
 
 # --- Get Multi Values Routine ---
-def get_multi_values(multi_mode, self):
+def get_multi_values(multi_mode, removeduplicates, self):
     multi_values = []
     for row in range(self.multitable.rowCount()):
         combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
@@ -113,6 +113,8 @@ def get_multi_values(multi_mode, self):
                 multi_values.append(combo.date())
             else:
                 multi_values.append(combo.currentText())  # get the selected text
+    if removeduplicates:
+        multi_values = list(dict.fromkeys(multi_values))
     return multi_values
 
 
@@ -129,7 +131,7 @@ def update_plot(self):
     curr_day = self.select_day.date().toString('yyyy-MM-dd')
 
     # Get parameters (multiple mode)
-    multi_values = get_multi_values(multi_mode, self)
+    multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=True, self=self)
 
     # Objects to be checked
     if multi_mode == 'Multi Objects':
@@ -137,8 +139,6 @@ def update_plot(self):
         if not 'SUN' in sel_ssbodies:
             sel_ssbodies = ['SUN'] + sel_ssbodies
         sel_stars = [m for m in multi_values if m not in self.ssobj]
-         #if not('SUN' in multi_values):
-         #   multi_values = ['SUN', multi_values]
     else:
         if curr_obj in self.ssobj:
             if curr_obj == 'SUN':
@@ -174,6 +174,7 @@ def update_plot(self):
     # Time info
     if multi_mode == 'Multi Days':
         multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
+        multi_values = list(dict.fromkeys(multi_values))
         sel_days = multi_values
     else:
         sel_days = [curr_day]
@@ -242,21 +243,17 @@ def selmultidata(self):
 
     # Enable / Disable other controls
     if multi_mode == 'Single Data':
-        #self.daynight.setEnabled(True)
-        #self.horizonview.setEnabled(True)
         self.selcolour.setEnabled(False)
         self.nrows.setEnabled(False)
     else:
-        #self.daynight.setEnabled(False)
-        #self.horizonview.setEnabled(False)
         self.selcolour.setEnabled(True)
         self.nrows.setEnabled(True)
 
     # Table Rows
     n_rows = self.multitable.rowCount()
     n_rows_target = self.nrows.value()
-    if n_rows_target != n_rows: # Only makes sense if nr of object did not change
-        multi_values = get_multi_values(multi_mode, self)
+    if n_rows_target != n_rows: # Only makes sense if nr of object has changed
+        multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=False, self=self)
 
     # Manage Table
     if multi_mode in ['Multi Objects', 'Multi Locations']:
