@@ -34,7 +34,7 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         if 'Polar' in plot_type:
             if 'North' in plot_type:
                 y1 = -y1
-            y2 = y2*15
+            y2 = y2 * 15
     if 'Polar' in plot_type:
         y1 = y1 + 90
 
@@ -102,9 +102,9 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         'Night Above', 'Twilight Above', 'Day Above',
         'Night Below', 'Twilight Below', 'Day Below'
     ]
-    is_night = sun_alt<-6
-    is_twilight = (sun_alt>=-6) & (sun_alt<0)
-    is_day = sun_alt>=0
+    is_night = sun_alt < -6
+    is_twilight = (sun_alt >= -6) & (sun_alt < 0)
+    is_day = sun_alt >= 0
     is_above = star_alt >= 0
     is_below = star_alt < 0
 
@@ -294,16 +294,20 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
 
     # Routine to extract filtered values
     def dfos_get(df, curr_obj):
-        dfos = df[[
-            't_current', 'n_day', 'hour_current', 'day_sel', 'loc_sel', 'n_loc',
+        chans = [
+            't_current', 'n_day', 'hour_current', 'day_sel', 'loc_sel', 'n_loc', 'SUN_altitude_deg',
             f'{curr_obj}_azimuth_deg', f'{curr_obj}_altitude_deg', f'{curr_obj}_ha', f'{curr_obj}_declination_deg'
-            ]].copy()
+            ]
+        chans = list(dict.fromkeys(chans)) # Remove duplicates (there might be two SUN_altitude_deg
+        dfos = df[chans].copy()
         dfos.rename(columns={
             f'{curr_obj}_azimuth_deg': 'obj_azimuth_deg',
             f'{curr_obj}_altitude_deg': 'obj_altitude_deg',
             f'{curr_obj}_ha': 'obj_ha',
             f'{curr_obj}_declination_deg': 'obj_declination_deg'
         }, inplace=True)
+        if curr_obj == 'SUN':
+            dfos['SUN_altitude_deg'] = dfos['obj_altitude_deg'].copy()
         return dfos
 
     # Case 1 - Multi Objects
@@ -345,7 +349,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     x_gr = {}
 
     for multi_value in multi_values:
-        dfos = df_outspl[multi_value]
+        dfos = df_outspl[multi_value].copy()
 
         # Define Variables
         if 'Azimuth/Altidude' in plot_type:
@@ -366,6 +370,25 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             ymax = 24 if 'Equatorial' in plot_type else 360
             y2_isdisc = y2.diff().abs() > ymax*0.9
             y2[y2_isdisc] = np.nan
+
+        # Look for (night, twilight, day) and (above, below)
+        star_alt = dfos['obj_altitude_deg']
+        sun_alt = dfos['SUN_altitude_deg']
+        is_night = sun_alt < -6
+        is_day = sun_alt >= 0
+        is_above = star_alt >= 0
+        is_below = star_alt < 0
+
+        # Filter positions
+        if self.daynight.currentText() == 'Night Only':
+            y1[is_day] = np.nan
+            y2[is_day] = np.nan
+        if self.daynight.currentText() == 'Day Only':
+            y1[is_night] = np.nan
+            y2[is_night] = np.nan
+        if self.horizonview.currentText() == 'Above Horizon':
+            y1[~is_above] = np.nan
+            y2[~is_above] = np.nan
 
         # Write variables
         y1s[multi_value] = [y for y in y1]
