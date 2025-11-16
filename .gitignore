@@ -2,6 +2,7 @@
 .idea
 .venv
 *.db
+*.log
 /test/
 /assets/source/
 

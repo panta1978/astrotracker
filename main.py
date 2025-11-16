@@ -7,6 +7,9 @@
 import os
 import sys
 from functools import partial
+import traceback
+from datetime import datetime
+
 import pandas as pd
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget, QMessageBox,
@@ -29,6 +32,71 @@ importlib.reload(cb)
 # Environment (True for compiled version, False for development)
 IS_FROZEN = getattr(sys, 'frozen', False)
 
+
+# --- GLOBAL EXCEPTION HANDLING ---
+def qt_exception_hook(exctype, value, tb):
+    """
+    Global exception hook: logs traceback to a file and shows a QMessageBox with details.
+    This prevents unhandled exceptions inside Qt callbacks from killing the process.
+    """
+    try:
+        tb_text = ''.join(traceback.format_exception(exctype, value, tb))
+        # Log to stderr / console
+        print(tb_text, file=sys.stderr)
+
+        # Determine base path for log file (handle PyInstaller)
+        try:
+            base_path = sys._MEIPASS  # when frozen by PyInstaller
+        except Exception:
+            base_path = os.path.dirname(__file__) if '__file__' in globals() else os.getcwd()
+
+        log_path = os.path.join(base_path, 'astrotracker_error.log')
+        timestamp = datetime.now().strftime('%d-%b-%Y, %H:%M:%S')
+        with open(log_path, 'a', encoding='utf-8') as fh:
+            fh.write('=' * 32 + '\n')
+            fh.write(f'Timestamp: {timestamp}\n\n')
+            fh.write(tb_text)
+            fh.write('\n')
+
+        # Show a friendly dialog with expandable details
+        # Use a minimal-safe approach: avoid complex UI creation if QApplication not available
+        if QApplication.instance() is not None:
+            try:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Critical)
+                msg.setWindowTitle('Unexpected Error')
+                msg.setTextFormat(Qt.TextFormat.RichText)
+                msg.setText(
+                    'An unexpected error occurred.<br>'
+                    'The app will attempt to continue.<br><br>'
+                    f'See <a href="file:///{log_path}">astrotracker.log</a> for more information.'
+                )
+                # Short informative text
+                msg.setInformativeText(str(value))
+                # Expandable detailed traceback
+                msg.setDetailedText(tb_text)
+                msg.exec()
+            except Exception:
+                # If something goes wrong building the dialog, fallback to printing
+                print('Failed to show QMessageBox for exception.', file=sys.stderr)
+    except Exception as e:
+        # Last-resort: print everything
+        print('Error in qt_exception_hook:', e, file=sys.stderr)
+        traceback.print_exc()
+
+
+class SafeApplication(QApplication):
+    """
+    Subclass QApplication and override notify to catch exceptions raised during event processing.
+    This prevents Qt from crashing when a signal/slot raises an exception.
+    """
+    def notify(self, receiver, event):
+        try:
+            return super().notify(receiver, event)
+        except Exception:
+            qt_exception_hook(*sys.exc_info())
+            # Returning False indicates the event was not handled; prevents crash.
+            return False
 
 
 class MainWindow(QMainWindow):
@@ -397,7 +465,10 @@ class MainWindow(QMainWindow):
 
 # --- MAIN APP EXECUTION ---
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    # Install global exception hook so uncaught exceptions are handled consistently
+    sys.excepthook = qt_exception_hook
+
+    app = SafeApplication(sys.argv)
     if getattr(sys, 'frozen', False):
         base_path = sys._MEIPASS  # PyInstaller temp dir
     else:
