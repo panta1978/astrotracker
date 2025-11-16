@@ -33,6 +33,16 @@ importlib.reload(cb)
 IS_FROZEN = getattr(sys, 'frozen', False)
 
 
+
+# Get Base Path (for both dev and compiled environment)
+def get_base_path() -> str:
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    # fallback if __file__ doesn't exist (e.g., interactive session)
+    return os.path.dirname(__file__) if '__file__' in globals() else os.getcwd()
+
+
+
 # --- GLOBAL EXCEPTION HANDLING ---
 def qt_exception_hook(exctype, value, tb):
     """
@@ -45,10 +55,7 @@ def qt_exception_hook(exctype, value, tb):
         print(tb_text, file=sys.stderr)
 
         # Determine base path for log file (handle PyInstaller)
-        try:
-            base_path = sys._MEIPASS  # when frozen by PyInstaller
-        except Exception:
-            base_path = os.path.dirname(__file__) if '__file__' in globals() else os.getcwd()
+        base_path = get_base_path()
 
         log_path = os.path.join(base_path, 'astrotracker_error.log')
         timestamp = datetime.now().strftime('%d-%b-%Y, %H:%M:%S')
@@ -85,11 +92,9 @@ def qt_exception_hook(exctype, value, tb):
         traceback.print_exc()
 
 
+
+# CLass to safely launch QApplication (exceptions managed)
 class SafeApplication(QApplication):
-    """
-    Subclass QApplication and override notify to catch exceptions raised during event processing.
-    This prevents Qt from crashing when a signal/slot raises an exception.
-    """
     def notify(self, receiver, event):
         try:
             return super().notify(receiver, event)
@@ -99,11 +104,11 @@ class SafeApplication(QApplication):
             return False
 
 
+
+# --- MAIN WINDOW ---
 class MainWindow(QMainWindow):
 
-    # --- MAIN WINDOW ---
     def __init__(self):
-
         ssobj: list[str]
         df_stars: pd.DataFrame
         df_loc: pd.DataFrame
@@ -469,10 +474,7 @@ if __name__ == '__main__':
     sys.excepthook = qt_exception_hook
 
     app = SafeApplication(sys.argv)
-    if getattr(sys, 'frozen', False):
-        base_path = sys._MEIPASS  # PyInstaller temp dir
-    else:
-        base_path = os.path.dirname(__file__)
+    base_path = get_base_path()
 
     # Splashscreen
     if IS_FROZEN:
@@ -490,6 +492,6 @@ if __name__ == '__main__':
     # Force Qt to process splash screen immediately
     if IS_FROZEN:
         QTimer.singleShot(200, splash.close)
-    
+
     window.show()
     sys.exit(app.exec())
