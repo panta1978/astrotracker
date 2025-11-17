@@ -258,6 +258,15 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
                 xref='paper', yref='paper'
             )
 
+        # Add black circle
+        theta_circle = np.linspace(0, 360, 361)  # full circle, 1° step
+        r_circle = np.full_like(theta_circle, 90)  # constant radius = 90°
+        self.fig.add_trace(go.Scatterpolar(
+            r=r_circle, theta=theta_circle,
+            mode='lines', line=dict(color='black', width=1.5),
+            name='Horizon', hoverinfo='skip', showlegend=False # optional: disable hover
+        ))
+
         # Add lines
         for position in positions:
             p1, p2 = position.split(' ')
@@ -268,15 +277,6 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
                 customdata=cust_data, hovertemplate='<b>' + position + '</b><br>'+hover_templ,
                 name=position)
             )
-
-        # Add black circle
-        theta_circle = np.linspace(0, 360, 361)  # full circle, 1° step
-        r_circle = np.full_like(theta_circle, 90)  # constant radius = 90°
-        self.fig.add_trace(go.Scatterpolar(
-            r=r_circle, theta=theta_circle,
-            mode='lines', line=dict(color='black', width=1.5),
-            name='Horizon', hoverinfo='skip', showlegend=False # optional: disable hover
-        ))
 
     # Render in PyQt6 WebView
     tmp_dir = tempfile.gettempdir()
