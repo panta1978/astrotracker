@@ -8,5 +8,7 @@ setuptools
 PyQt6
 PyQt6-WebEngine
 plotly
+matplotlib
+kaleido
 wheel
 pyinstaller

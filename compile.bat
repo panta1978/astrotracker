@@ -20,6 +20,7 @@ REM Build EXE with PyInstaller
 	--add-data "%CITATION_SRC%;%CITATION_DEST%" ^
 	--add-data "%SIMBAD_JSON_SRC%;%SIMBAD_JSON_DEST%" ^
 	--add-data "%CD%\db_backup.sql;." ^
+	--add-data "%CD%\LICENSE.txt;." ^
 	--add-data "%CD%\assets;assets"
 
 echo === Build complete ===

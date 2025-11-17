@@ -7,6 +7,9 @@
 import os
 import sys
 from functools import partial
+import traceback
+from datetime import datetime
+
 import pandas as pd
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QComboBox, QTableWidget, QMessageBox,
@@ -31,11 +34,80 @@ IS_FROZEN = getattr(sys, 'frozen', False)
 
 
 
+# Get Base Path (for both dev and compiled environment)
+def get_base_path() -> str:
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    # fallback if __file__ doesn't exist (e.g., interactive session)
+    return os.path.dirname(__file__) if '__file__' in globals() else os.getcwd()
+
+
+
+# --- GLOBAL EXCEPTION HANDLING ---
+def qt_exception_hook(exctype, value, tb):
+    """
+    Global exception hook: logs traceback to a file and shows a QMessageBox with details.
+    This prevents unhandled exceptions inside Qt callbacks from killing the process.
+    """
+    try:
+        tb_text = ''.join(traceback.format_exception(exctype, value, tb))
+        # Log to stderr / console
+        print(tb_text, file=sys.stderr)
+
+        # Determine base path for log file (handle PyInstaller)
+        base_path = get_base_path()
+        log_path = os.path.join(base_path, 'astrotracker_error.log')
+        timestamp = datetime.now().strftime('%d-%b-%Y, %H:%M:%S')
+        with open(log_path, 'a', encoding='utf-8') as fh:
+            fh.write('=' * 32 + '\n')
+            fh.write(f'Timestamp: {timestamp}\n\n')
+            fh.write(tb_text)
+            fh.write('\n')
+
+        # Show a friendly dialog with expandable details
+        # Use a minimal-safe approach: avoid complex UI creation if QApplication not available
+        if QApplication.instance() is not None:
+            try:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Icon.Critical)
+                msg.setWindowTitle('Unexpected Error')
+                msg.setTextFormat(Qt.TextFormat.RichText)
+                msg.setText(
+                    'An unexpected error occurred.<br>'
+                    'The app will attempt to continue.<br><br>'
+                    f'See <a href="file:///{log_path}">astrotracker.log</a> for more information.'
+                )
+                # Short informative text
+                msg.setInformativeText(str(value))
+                # Expandable detailed traceback
+                msg.setDetailedText(tb_text)
+                msg.exec()
+            except Exception:
+                # If something goes wrong building the dialog, fallback to printing
+                print('Failed to show QMessageBox for exception.', file=sys.stderr)
+    except Exception as e:
+        # Last-resort: print everything
+        print('Error in qt_exception_hook:', e, file=sys.stderr)
+        traceback.print_exc()
+
+
+
+# CLass to safely launch QApplication (exceptions managed)
+class SafeApplication(QApplication):
+    def notify(self, receiver, event):
+        try:
+            return super().notify(receiver, event)
+        except Exception:
+            qt_exception_hook(*sys.exc_info())
+            # Returning False indicates the event was not handled; prevents crash.
+            return False
+
+
+
+# --- MAIN WINDOW ---
 class MainWindow(QMainWindow):
 
-    # --- MAIN WINDOW ---
     def __init__(self):
-
         ssobj: list[str]
         df_stars: pd.DataFrame
         df_loc: pd.DataFrame
@@ -48,7 +120,7 @@ class MainWindow(QMainWindow):
             # Window Setup
             super().__init__()
             self.setWindowTitle('Astrotracker')
-            self.ver = '1.2'
+            self.ver = '1.4'
             self.recalc = True
             self.multimin = 2
             self.multimax = 18
@@ -228,20 +300,11 @@ class MainWindow(QMainWindow):
             """
 
             # Run Button
-            self.run_button = QPushButton('RUN')
-            self.run_button.clicked.connect(lambda: cb.update_plot(self))
-            self.run_button.setFixedWidth(120)
-            self.run_button.setStyleSheet(style_button)
-            sidemenu.addWidget(self.run_button)
-
-            # Export Button
-            self.export_button = QPushButton('EXPORT')
-            self.export_button.setEnabled(False)
-            self.export_button.clicked.connect(lambda: cb.export_data(self))
-            self.export_button.setFixedWidth(120)
-            self.export_button.setStyleSheet(style_button)
-            sidemenu.addWidget(self.export_button)
-            sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
+            self.plot_button = QPushButton('PLOT')
+            self.plot_button.clicked.connect(lambda: cb.update_plot(self))
+            self.plot_button.setFixedWidth(120)
+            self.plot_button.setStyleSheet(style_button)
+            sidemenu.addWidget(self.plot_button)
 
             # Side Menu Container
             sidemenu_widget = QWidget()
@@ -371,11 +434,23 @@ class MainWindow(QMainWindow):
             loc_remove.triggered.connect(lambda: cb.call_remove_locations(self))
             self.loc_menu.addAction(loc_remove)
 
+            # Export Menu
+            self.export_menu = menubar.addMenu('Export')
+            export_data = QAction('Export Data (.CSV)', self)
+            export_data.triggered.connect(partial(cb.export, self, 'csv'))
+            self.export_menu.addAction(export_data)
+            export_figure = QAction('Export Figure (.PNG)', self)
+            export_figure.triggered.connect(partial(cb.export, self, 'png'))
+            self.export_menu.addAction(export_figure)
+
             # Info Menu
-            loc_info = menubar.addMenu('Info')
-            loc_about = QAction('About', self)
-            loc_about.triggered.connect(lambda: cb.show_about_dialog(self))
-            loc_info.addAction(loc_about)
+            self.info_menu = menubar.addMenu('Info')
+            info_log = QAction('View Log File', self)
+            info_log.triggered.connect(lambda: cb.show_errorlog(self, get_base_path))
+            self.info_menu.addAction(info_log)
+            info_about = QAction('About', self)
+            info_about.triggered.connect(lambda: cb.show_about_dialog(self, get_base_path))
+            self.info_menu.addAction(info_about)
 
             # Initial Plot
             cb.update_plot(self)
@@ -397,11 +472,16 @@ class MainWindow(QMainWindow):
 
 # --- MAIN APP EXECUTION ---
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    if getattr(sys, 'frozen', False):
-        base_path = sys._MEIPASS  # PyInstaller temp dir
-    else:
-        base_path = os.path.dirname(__file__)
+    # Install global exception hook so uncaught exceptions are handled consistently
+    sys.excepthook = qt_exception_hook
+    app = SafeApplication(sys.argv)
+    base_path = get_base_path()
+
+    # Create error log file if it does not exist
+    log_path = os.path.join(base_path, 'astrotracker_error.log')
+    if not os.path.exists(log_path):
+        with open(log_path, 'w', encoding='utf-8') as fh:
+            fh.write('ASTROTRACKER ERROR LOG FILE:\n\n')
 
     # Splashscreen
     if IS_FROZEN:
@@ -419,6 +499,6 @@ if __name__ == '__main__':
     # Force Qt to process splash screen immediately
     if IS_FROZEN:
         QTimer.singleShot(200, splash.close)
-    
+
     window.show()
     sys.exit(app.exec())

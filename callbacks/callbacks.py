@@ -8,6 +8,7 @@
 
 import os
 import sys
+import re
 import pandas as pd
 import sqlite3
 from pathlib import Path
@@ -31,7 +32,7 @@ importlib.reload(remove_stars)
 importlib.reload(remove_locations)
 
 
-# DB Path
+# --- DB Path ---
 def resource_path(relative_path):
         try: # Compiled Version
             base_path = sys._MEIPASS
@@ -39,7 +40,9 @@ def resource_path(relative_path):
             base_path = os.path.abspath('.')
         return os.path.join(base_path, relative_path)
 
-# Read DB Routine
+
+
+# --- Read DB Routine ---
 def read_db(self):
     conn = None
     try:
@@ -50,7 +53,9 @@ def read_db(self):
         if conn is not None:
             conn.close()
 
-# Restore DB Routine
+
+
+# --- Restore DB Routine ---
 def restore_db(self):
     sql_file = resource_path('db_backup.sql')
     with sqlite3.connect(self.db_path) as conn:
@@ -205,8 +210,23 @@ def update_plot(self):
         myap.makeplot_single(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
     else:
         myap.makeplot_multi(self.df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self)
-    self.export_button.setEnabled(True)
     self.recalc = False # If no input parameter changes, do not recalculate objects' positions
+
+    def sanitise_obj_loc(str0):
+        str1 = re.sub(r'[^A-Za-z0-9]+', '_', str0)
+        str2 = str1.strip('_')
+        return str2
+
+    # Save parameters (for default file names)
+    self.multi_mode = multi_mode
+    self.curr_obj = sanitise_obj_loc(curr_obj)
+    self.curr_location = sanitise_obj_loc(curr_location)
+    self.curr_day = curr_day.replace('-','_')
+
+    # Adjust for multi mode
+    if multi_mode == 'Multi Objects': self.curr_obj = 'MULTI_OBJ'
+    if multi_mode == 'Multi Locations': self.curr_location = 'MULTI_LOC'
+    if multi_mode == 'Multi Days': curr_day = 'MULTI_DAY'
 
 
 
@@ -318,21 +338,28 @@ def selmultidata(self):
 
 
 # ---  EXPORT DATA ---
-def export_data(self):
+def export(self, format):
 
+    # Default file name
+    file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+
+    format_up = format.upper()
     file_path, _ = QFileDialog.getSaveFileName(
-        self, 'Save CSV File', '', 'CSV Files (*.csv);;All Files (*)'
+        self, f'Save {format_up} File', f'{file_name}.{format}', f'{format_up} Files (*.{format})'
     )
     if not file_path:
         return
 
     try:
-        # Ensure it ends with .csv
-        if not file_path.lower().endswith('.csv'):
-            file_path += '.csv'
+        # Ensure it ends with .csv / png
+        if not file_path.lower().endswith(f'.{format}'):
+            file_path += f'.{format}'
 
-        # Save the DataFrame
-        self.df_out.to_csv(file_path, sep=';', index=False)
+        if format == 'csv': # Save the DataFrame
+            self.df_out.to_csv(file_path, sep=';', index=False)
+        elif format == 'png': # Export Figure
+            self.fig.write_image(file_path)
+
         QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
 
     except Exception as e:
@@ -376,15 +403,42 @@ def call_remove_locations(self):
 
 
 # --- ABOUT DIALOG ---
-def show_about_dialog(self):
+def show_errorlog(self, get_base_path):
+    base_path = get_base_path()
+    log_path = os.path.join(base_path, 'astrotracker_error.log')
+    if os.path.exists(log_path):
+        try:
+            os.startfile(log_path)  # Opens with default app (Notepad, etc.)
+        except:
+            QMessageBox.critical(
+            self,
+            'Unable to Open File',
+            f'astrotracker_error.log file could not be opened.'
+        )
+    else:
+        QMessageBox.critical(
+            self,
+            'Unable to Find File',
+            f'astrotracker_error.log does not exist.'
+        )
+
+
+
+# --- ABOUT DIALOG ---
+def show_about_dialog(self, get_base_path):
+    base_path = get_base_path()
+    lic_path = os.path.join(base_path, 'LICENSE.txt')
     text = (
             '<b>Astrotracker</b><br>'
             f'Version {self.ver}<br><br>'
             'A Python-based tool for astronomical event tracking and visualisation.<br><br>'
+            '<b>Author:</b><br>'
+            'Stefano Pantaleoni (stefano.pantaleoni@gmail.com)<br><br>'
             '<b>License:</b><br>'
             'MIT License<br>'
             'Copyright (c) 2025 Stefano Pantaleoni<br><br>'
-            'See LICENSE.txt for full details.'
+            f'See <a href="file:///{lic_path}">LICENSE.txt</a> for full details.'
         )
     QMessageBox.about(self, 'About Astrotracker', text)
-    
+
+

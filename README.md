@@ -6,19 +6,37 @@ using PyQt6 and Plotly.
 
 ---
 
-## How It Works
+## Features
 
-Astrotracker contains a default database of celestial objects and cities. This DB can be expanded, and other stars
-and cities can be added.
+- **Built-in database of celestial objects and cities (expandable)**  
+  Comes with a default set of stars, planets, and cities. You can add more objects or locations as needed.
 
-By selecting the requested celestial object, city, and date, it is possible to track the object trajectory.
-Several graphs are available, both in Azimuth / Altitude and Equatorial coordinates.
+- **Track trajectories for Sun, Moon, planets, and stars**  
+  Compute and visualise the path of any celestial object over a selected date and location.
 
-It is also possible to save the results in a .CSV file.
+- **View trajectories in Azimuth/Altitude or Equatorial coordinates**  
+  Choose between local sky coordinates (Az/Alt) or universal Equatorial coordinates for analysis.
+
+- **Multi data options**  
+  Track multiple objects at once, monitor the same object from different locations, or analyse it over multiple days.
+
+- **Time options: Civil, Local Astronomical, and Greenwich Time**  
+  Display object positions in your preferred time format for accuracy and convenience.
+
+- **Save results to CSV**  
+  Export the computed data for further analysis or record-keeping.
+
+- **Interactive, high-quality Plotly graphs**  
+  Explore celestial trajectories with zoomable, interactive plots.
+
+- **Export graphs as PNG**  
+  Save visualisations as images for reports or presentations.
 
 ---
 
-## Download
+## Source Code
+
+### Download
 
 To clone the repository:
 ```bash
@@ -26,9 +44,7 @@ git clone https://github.com/panta1978/astrotracker
 cd astrotracker
 ```
 
----
-
-## Installation
+### Installation
 
 Ensure you have **Python 3.13** installed.
 Other Python versions may work, but they have not been thoroughly tested.
@@ -38,10 +54,15 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
-To compile the version from the source code, run compile.bat.
+To compile the version from the source code, run compile.bat (Windows only).
 
-If you are using Windows and prefer a standalone executable, check the Releases section for .exe builds (available
-from version v1.2 onwards).
+---
+
+## Executable
+
+If you are using Windows and prefer a standalone executable, check the Releases section for .exe builds.
+Latest version is available at [this link](https://github.com/panta1978/astrotracker/releases/latest).
+Note. To free up space, previous versions' executables files might not be kept.
 
 ---
 
@@ -49,11 +70,5 @@ from version v1.2 onwards).
 
 Astrotracker is distributed under the **MIT License** starting from **v1.1**.
 
-```txt
-MIT License  
-Copyright (c) 2025 Stefano Pantaleoni
-```
-
-See the [LICENSE.txt](LICENSE.txt) file for full terms.
-
----
+MIT License © 2025 Stefano Pantaleoni  
+See [LICENSE.txt](LICENSE.txt) for full terms.
