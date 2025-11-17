@@ -8,6 +8,7 @@
 
 import os
 import sys
+import re
 import pandas as pd
 import sqlite3
 from pathlib import Path
@@ -211,6 +212,22 @@ def update_plot(self):
         myap.makeplot_multi(self.df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self)
     self.recalc = False # If no input parameter changes, do not recalculate objects' positions
 
+    def sanitise_obj_loc(str0):
+        str1 = re.sub(r'[^A-Za-z0-9]+', '_', str0)
+        str2 = str1.strip('_')
+        return str2
+
+    # Save parameters (for default file names)
+    self.multi_mode = multi_mode
+    self.curr_obj = sanitise_obj_loc(curr_obj)
+    self.curr_location = sanitise_obj_loc(curr_location)
+    self.curr_day = curr_day.replace('-','_')
+
+    # Adjust for multi mode
+    if multi_mode == 'Multi Objects': self.curr_obj = 'MULTI_OBJ'
+    if multi_mode == 'Multi Locations': self.curr_location = 'MULTI_LOC'
+    if multi_mode == 'Multi Days': curr_day = 'MULTI_DAY'
+
 
 
 # --- TIME STEP CHANGED ---
@@ -321,44 +338,28 @@ def selmultidata(self):
 
 
 # ---  EXPORT DATA ---
-def export_data(self):
+def export(self, format):
 
+    # Default file name
+    file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+
+    format_up = format.upper()
     file_path, _ = QFileDialog.getSaveFileName(
-        self, 'Save CSV File', '', 'CSV Files (*.csv)'
+        self, f'Save {format_up} File', f'{file_name}.{format}', f'{format_up} Files (*.{format})'
     )
     if not file_path:
         return
 
     try:
-        # Ensure it ends with .csv
-        if not file_path.lower().endswith('.csv'):
-            file_path += '.csv'
+        # Ensure it ends with .csv / png
+        if not file_path.lower().endswith(f'.{format}'):
+            file_path += f'.{format}'
 
-        # Save the DataFrame
-        self.df_out.to_csv(file_path, sep=';', index=False)
-        QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
+        if format == 'csv': # Save the DataFrame
+            self.df_out.to_csv(file_path, sep=';', index=False)
+        elif format == 'png': # Export Figure
+            self.fig.write_image(file_path)
 
-    except Exception as e:
-        QMessageBox.critical(self, 'Error', f'Could not save file:\n{str(e)}')
-
-
-
-# --- EXPORT FIGURE ---
-def export_figure(self):
-
-    file_path, _ = QFileDialog.getSaveFileName(
-        self, 'Save PNG File', '', 'PNG Files (*.png)'
-    )
-    if not file_path:
-        return
-
-    try:
-        # Ensure it ends with .png
-        if not file_path.lower().endswith('.png'):
-            file_path += '.png'
-
-        # Export Figure
-        self.fig.write_image(file_path)
         QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
 
     except Exception as e:

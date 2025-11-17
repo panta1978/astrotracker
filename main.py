@@ -437,10 +437,10 @@ class MainWindow(QMainWindow):
             # Export Menu
             self.export_menu = menubar.addMenu('Export')
             export_data = QAction('Export Data (.CSV)', self)
-            export_data.triggered.connect(lambda: cb.export_data(self))
+            export_data.triggered.connect(partial(cb.export, self, 'csv'))
             self.export_menu.addAction(export_data)
             export_figure = QAction('Export Figure (.PNG)', self)
-            export_figure.triggered.connect(lambda: cb.export_figure(self))
+            export_figure.triggered.connect(partial(cb.export, self, 'png'))
             self.export_menu.addAction(export_figure)
 
             # Info Menu
