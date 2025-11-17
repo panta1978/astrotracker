@@ -31,7 +31,7 @@ importlib.reload(remove_stars)
 importlib.reload(remove_locations)
 
 
-# DB Path
+# --- DB Path ---
 def resource_path(relative_path):
         try: # Compiled Version
             base_path = sys._MEIPASS
@@ -39,7 +39,9 @@ def resource_path(relative_path):
             base_path = os.path.abspath('.')
         return os.path.join(base_path, relative_path)
 
-# Read DB Routine
+
+
+# --- Read DB Routine ---
 def read_db(self):
     conn = None
     try:
@@ -50,7 +52,9 @@ def read_db(self):
         if conn is not None:
             conn.close()
 
-# Restore DB Routine
+
+
+# --- Restore DB Routine ---
 def restore_db(self):
     sql_file = resource_path('db_backup.sql')
     with sqlite3.connect(self.db_path) as conn:
@@ -205,7 +209,6 @@ def update_plot(self):
         myap.makeplot_single(self.df_out, curr_obj, curr_location, curr_day, plot_type, self)
     else:
         myap.makeplot_multi(self.df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self)
-    self.export_button.setEnabled(True)
     self.recalc = False # If no input parameter changes, do not recalculate objects' positions
 
 
@@ -321,7 +324,7 @@ def selmultidata(self):
 def export_data(self):
 
     file_path, _ = QFileDialog.getSaveFileName(
-        self, 'Save CSV File', '', 'CSV Files (*.csv);;All Files (*)'
+        self, 'Save CSV File', '', 'CSV Files (*.csv)'
     )
     if not file_path:
         return
@@ -333,6 +336,29 @@ def export_data(self):
 
         # Save the DataFrame
         self.df_out.to_csv(file_path, sep=';', index=False)
+        QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
+
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', f'Could not save file:\n{str(e)}')
+
+
+
+# --- EXPORT FIGURE ---
+def export_figure(self):
+
+    file_path, _ = QFileDialog.getSaveFileName(
+        self, 'Save PNG File', '', 'PNG Files (*.png)'
+    )
+    if not file_path:
+        return
+
+    try:
+        # Ensure it ends with .png
+        if not file_path.lower().endswith('.png'):
+            file_path += '.png'
+
+        # Export Figure
+        self.fig.write_image(file_path)
         QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
 
     except Exception as e:
@@ -376,6 +402,28 @@ def call_remove_locations(self):
 
 
 # --- ABOUT DIALOG ---
+def show_errorlog(self, get_base_path):
+    base_path = get_base_path()
+    log_path = os.path.join(base_path, 'astrotracker_error.log')
+    if os.path.exists(log_path):
+        try:
+            os.startfile(log_path)  # Opens with default app (Notepad, etc.)
+        except:
+            QMessageBox.critical(
+            self,
+            'Unable to Open File',
+            f'astrotracker_error.log file could not be opened.'
+        )
+    else:
+        QMessageBox.critical(
+            self,
+            'Unable to Find File',
+            f'astrotracker_error.log does not exist.'
+        )
+
+
+
+# --- ABOUT DIALOG ---
 def show_about_dialog(self):
     text = (
             '<b>Astrotracker</b><br>'
@@ -387,4 +435,5 @@ def show_about_dialog(self):
             'See LICENSE.txt for full details.'
         )
     QMessageBox.about(self, 'About Astrotracker', text)
-    
+
+

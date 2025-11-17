@@ -56,7 +56,6 @@ def qt_exception_hook(exctype, value, tb):
 
         # Determine base path for log file (handle PyInstaller)
         base_path = get_base_path()
-
         log_path = os.path.join(base_path, 'astrotracker_error.log')
         timestamp = datetime.now().strftime('%d-%b-%Y, %H:%M:%S')
         with open(log_path, 'a', encoding='utf-8') as fh:
@@ -121,7 +120,7 @@ class MainWindow(QMainWindow):
             # Window Setup
             super().__init__()
             self.setWindowTitle('Astrotracker')
-            self.ver = '1.2'
+            self.ver = '1.4'
             self.recalc = True
             self.multimin = 2
             self.multimax = 18
@@ -301,20 +300,11 @@ class MainWindow(QMainWindow):
             """
 
             # Run Button
-            self.run_button = QPushButton('RUN')
-            self.run_button.clicked.connect(lambda: cb.update_plot(self))
-            self.run_button.setFixedWidth(120)
-            self.run_button.setStyleSheet(style_button)
-            sidemenu.addWidget(self.run_button)
-
-            # Export Button
-            self.export_button = QPushButton('EXPORT')
-            self.export_button.setEnabled(False)
-            self.export_button.clicked.connect(lambda: cb.export_data(self))
-            self.export_button.setFixedWidth(120)
-            self.export_button.setStyleSheet(style_button)
-            sidemenu.addWidget(self.export_button)
-            sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
+            self.plot_button = QPushButton('PLOT')
+            self.plot_button.clicked.connect(lambda: cb.update_plot(self))
+            self.plot_button.setFixedWidth(120)
+            self.plot_button.setStyleSheet(style_button)
+            sidemenu.addWidget(self.plot_button)
 
             # Side Menu Container
             sidemenu_widget = QWidget()
@@ -444,11 +434,23 @@ class MainWindow(QMainWindow):
             loc_remove.triggered.connect(lambda: cb.call_remove_locations(self))
             self.loc_menu.addAction(loc_remove)
 
+            # Export Menu
+            self.export_menu = menubar.addMenu('Export')
+            export_data = QAction('Export Data (.CSV)', self)
+            export_data.triggered.connect(lambda: cb.export_data(self))
+            self.export_menu.addAction(export_data)
+            export_figure = QAction('Export Figure (.PNG)', self)
+            export_figure.triggered.connect(lambda: cb.export_figure(self))
+            self.export_menu.addAction(export_figure)
+
             # Info Menu
-            loc_info = menubar.addMenu('Info')
-            loc_about = QAction('About', self)
-            loc_about.triggered.connect(lambda: cb.show_about_dialog(self))
-            loc_info.addAction(loc_about)
+            self.info_menu = menubar.addMenu('Info')
+            info_log = QAction('View Log File', self)
+            info_log.triggered.connect(lambda: cb.show_errorlog(self, get_base_path))
+            self.info_menu.addAction(info_log)
+            info_about = QAction('About', self)
+            info_about.triggered.connect(lambda: cb.show_about_dialog(self))
+            self.info_menu.addAction(info_about)
 
             # Initial Plot
             cb.update_plot(self)
@@ -472,9 +474,14 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     # Install global exception hook so uncaught exceptions are handled consistently
     sys.excepthook = qt_exception_hook
-
     app = SafeApplication(sys.argv)
     base_path = get_base_path()
+
+    # Create error log file if it does not exist
+    log_path = os.path.join(base_path, 'astrotracker_error.log')
+    if not os.path.exists(log_path):
+        with open(log_path, 'w', encoding='utf-8') as fh:
+            fh.write('ASTROTRACKER ERROR LOG FILE:\n\n')
 
     # Splashscreen
     if IS_FROZEN:
