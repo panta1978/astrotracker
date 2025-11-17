@@ -425,15 +425,19 @@ def show_errorlog(self, get_base_path):
 
 
 # --- ABOUT DIALOG ---
-def show_about_dialog(self):
+def show_about_dialog(self, get_base_path):
+    base_path = get_base_path()
+    lic_path = os.path.join(base_path, 'LICENSE.txt')
     text = (
             '<b>Astrotracker</b><br>'
             f'Version {self.ver}<br><br>'
             'A Python-based tool for astronomical event tracking and visualisation.<br><br>'
+            '<b>Author:</b><br>'
+            'Stefano Pantaleoni (stefano.pantaleoni@gmail.com)<br><br>'
             '<b>License:</b><br>'
             'MIT License<br>'
             'Copyright (c) 2025 Stefano Pantaleoni<br><br>'
-            'See LICENSE.txt for full details.'
+            f'See <a href="file:///{lic_path}">LICENSE.txt</a> for full details.'
         )
     QMessageBox.about(self, 'About Astrotracker', text)
 

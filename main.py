@@ -449,7 +449,7 @@ class MainWindow(QMainWindow):
             info_log.triggered.connect(lambda: cb.show_errorlog(self, get_base_path))
             self.info_menu.addAction(info_log)
             info_about = QAction('About', self)
-            info_about.triggered.connect(lambda: cb.show_about_dialog(self))
+            info_about.triggered.connect(lambda: cb.show_about_dialog(self, get_base_path))
             self.info_menu.addAction(info_about)
 
             # Initial Plot
