@@ -98,20 +98,25 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     star_alt = df_out[f'{curr_obj}_altitude_deg'].copy()
 
     # Look for (night, twilight, day) and (above, below)
+    twil_thresh = self.twilsel.value()
     positions = [
         'Night Above', 'Twilight Above', 'Day Above',
         'Night Below', 'Twilight Below', 'Day Below'
     ]
-    is_night = sun_alt < -6
-    is_twilight = (sun_alt >= -6) & (sun_alt < 0)
+    is_night = sun_alt < twil_thresh
+    is_twilight = (sun_alt >= twil_thresh) & (sun_alt < 0)
     is_day = sun_alt >= 0
     is_above = star_alt >= 0
     is_below = star_alt < 0
 
     # Filter positions
     if self.daynight.currentText() == 'Night Only':
+        positions = [p for p in positions if ('Night' in p)]
+    if self.daynight.currentText() == 'Night Only (+Twilight)':
         positions = [p for p in positions if ('Night' in p) or ('Twilight' in p)]
     if self.daynight.currentText() == 'Day Only':
+        positions = [p for p in positions if ('Day' in p)]
+    if self.daynight.currentText() == 'Day Only (+Twilight)':
         positions = [p for p in positions if ('Day' in p) or ('Twilight' in p)]
     if self.horizonview.currentText() == 'Above Horizon':
         positions = [p for p in positions if ('Above' in p)]
@@ -372,18 +377,26 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             y2[y2_isdisc] = np.nan
 
         # Look for (night, twilight, day) and (above, below)
+        twil_thresh = self.twilsel.value()
         star_alt = dfos['obj_altitude_deg']
         sun_alt = dfos['SUN_altitude_deg']
-        is_night = sun_alt < -6
+        is_night = sun_alt < twil_thresh
+        is_twilight = (sun_alt >= twil_thresh) & (sun_alt < 0)
         is_day = sun_alt >= 0
         is_above = star_alt >= 0
         is_below = star_alt < 0
 
         # Filter positions
         if self.daynight.currentText() == 'Night Only':
+            y1[is_day | is_twilight] = np.nan
+            y2[is_day | is_twilight] = np.nan
+        if self.daynight.currentText() == 'Night Only (+Twilight)':
             y1[is_day] = np.nan
             y2[is_day] = np.nan
         if self.daynight.currentText() == 'Day Only':
+            y1[is_night | is_twilight] = np.nan
+            y2[is_night | is_twilight] = np.nan
+        if self.daynight.currentText() == 'Day Only (+Twilight)':
             y1[is_night] = np.nan
             y2[is_night] = np.nan
         if self.horizonview.currentText() == 'Above Horizon':

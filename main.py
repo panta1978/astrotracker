@@ -221,15 +221,30 @@ class MainWindow(QMainWindow):
 
             # Day/Night Filter
             self.daynight = QComboBox()
-            self.daynight.addItems(['Day and Night', 'Night Only', 'Day Only'])
-            self.daynight.setFixedWidth(150)
+            self.daynight.addItems(['Day and Night', 'Night Only', 'Night Only (+Twilight)', 'Day Only', 'Day Only (+Twilight)'])
+            self.daynight.setFixedWidth(170)
             sidemenu.addWidget(self.daynight)
 
             # Horizon Filter
             self.horizonview = QComboBox()
             self.horizonview.addItems(['All positions', 'Above Horizon'])
-            self.horizonview.setFixedWidth(150)
+            self.horizonview.setFixedWidth(170)
             sidemenu.addWidget(self.horizonview)
+
+            # Twilight Menu
+            twilsel = QHBoxLayout()
+            twilsel.setContentsMargins(0, 0, 0, 0)
+            label_twilsel = QLabel('Twilight Thresh.')
+            twilsel.addWidget(label_twilsel)
+            self.twilsel = QSpinBox()
+            self.twilsel.setRange(-18, -3)
+            self.twilsel.setSingleStep(1)
+            self.twilsel.setValue(-6)
+            twilsel.addWidget(self.twilsel)
+            twilsel.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+            twilsel_widget = QWidget()
+            twilsel_widget.setLayout(twilsel)
+            sidemenu.addWidget(twilsel_widget)
             sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
             # Graph Options Label
