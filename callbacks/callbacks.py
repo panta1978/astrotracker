@@ -228,6 +228,18 @@ def update_plot(self):
     if multi_mode == 'Multi Locations': self.curr_location = 'MULTI_LOC'
     if multi_mode == 'Multi Days': curr_day = 'MULTI_DAY'
 
+    match self.select_graph.currentText():
+        case 'Azimuth/Altidude':
+            self.curr_graph = 'AzAlt'
+        case 'Azimuth/Altidude (Polar)':
+            self.curr_graph = 'AzAlt_Polar'
+        case 'Equatorial':
+            self.curr_graph = 'Equatorial'
+        case 'Equatorial (Polar, North)':
+            self.curr_graph = 'Equatorial_Polar_N'
+        case 'Equatorial (Polar, South)':
+            self.curr_graph = 'Equatorial_Polar_S'
+
 
 
 # --- TIME STEP CHANGED ---
@@ -341,7 +353,10 @@ def selmultidata(self):
 def export(self, format):
 
     # Default file name
-    file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+    if format == 'csv':
+        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+    else:
+        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}-{self.curr_graph}'
 
     format_up = format.upper()
     file_path, _ = QFileDialog.getSaveFileName(
