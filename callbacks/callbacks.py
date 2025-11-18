@@ -15,7 +15,10 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
-from PyQt6.QtCore import QDate
+from PyQt6.QtCore import QDate, QSize
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QPainter, QColor, QIcon
+
+import plotly.express as px
 import importlib
 import myastrolib as myal
 import myastroplot as myap
@@ -455,5 +458,59 @@ def show_about_dialog(self, get_base_path):
             f'See <a href="file:///{lic_path}">LICENSE.txt</a> for full details.'
         )
     QMessageBox.about(self, 'About Astrotracker', text)
+
+
+
+# Colour icon
+def make_colour_icon(colours, width, height, max_cols=12):
+    """Create a horizontal colour bar icon from a list of colour hex strings."""
+
+    def rgb_to_hex(s):
+        """Convert 'rgb(r,g,b)' string to '#rrggbb'."""
+        if s.startswith('rgb'):
+            parts = s[s.find('(')+1 : s.find(')')].split(',')
+            r, g, b = [int(p) for p in parts]
+            return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+        return s  # already hex or name
+
+    # Trim to max_cols for very long palettes
+    colours = [rgb_to_hex(c) for c in colours]
+    if len(colours) > max_cols:
+        step = len(colours) / max_cols
+        colours = [colours[int(i * step)] for i in range(max_cols)]
+
+    pix = QPixmap(width, height)
+    pix.fill(QColor('transparent'))
+    painter = QPainter(pix)
+    n = len(colours)
+    if n == 0:
+        return QIcon(pix)
+    block_width = width / n
+    for i, col in enumerate(colours):
+        painter.fillRect(int(i * block_width), 0, int(block_width), height, QColor(col))
+    painter.end()
+    return QIcon(pix)
+
+
+
+# --- CREATE COLOUR BOX ---
+def build_colour_combo(self, width, height):
+    combo = QComboBox()
+    combo.setIconSize(QSize(width, height))
+    model = QStandardItemModel(combo)
+
+    # Merge discrete and continuous colour maps
+    schemes = self.discrete_colour_map | self.continuous_colour_map
+
+    for label, colours in schemes.items():
+        item = QStandardItem()
+        item.setText(label)
+        item.setIcon(make_colour_icon(colours, width, height))
+        model.appendRow(item)
+
+    combo.setModel(model)
+    combo.setMinimumWidth(200)
+    return combo
+
 
 

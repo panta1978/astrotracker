@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QAction, QFont, QIcon, QPixmap
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
+import plotly.express as px
 from astroquery.simbad import Simbad
 Simbad.TIMEOUT = 2
 import importlib
@@ -128,6 +129,22 @@ class MainWindow(QMainWindow):
             self.day_max = QDate(2100, 12, 31)
             cb.init_data(self)
             QTimer.singleShot(0, self.showMaximized)
+
+            # Colour schemes
+            self.discrete_colour_map = {
+                'Plotly': px.colors.qualitative.Plotly,
+                'Set1': px.colors.qualitative.Set1,
+                'Set2': px.colors.qualitative.Set2,
+                'Bold': px.colors.qualitative.Bold,
+                'Dark24': px.colors.qualitative.Dark24
+            }
+            self.continuous_colour_map = {
+                'Viridis': px.colors.sequential.Viridis,
+                'Plasma': px.colors.sequential.Plasma,
+                'Turbo': px.colors.sequential.Turbo,
+                'Oranges': px.colors.sequential.Oranges,
+                'Greens': px.colors.sequential.Greens
+            }
 
             # Central Widget / Layout
             central_widget = QWidget()
@@ -356,10 +373,7 @@ class MainWindow(QMainWindow):
             label_selcolour.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             multidatamenu.addWidget(label_selcolour)
             self.selcolour = QComboBox()
-            self.selcolour.addItems([
-                'Default (Categorical)',
-                'Magma (Sequential)'
-            ])
+            self.selcolour = cb.build_colour_combo(self, width=100, height=15)
             self.selcolour.setFixedWidth(180)
             self.selcolour.setEnabled(False)
             multidatamenu.addWidget(self.selcolour)

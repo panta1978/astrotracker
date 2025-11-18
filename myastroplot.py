@@ -448,13 +448,14 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         '<extra></extra>'
     )
 
-    # Prepare colours
-    if self.selcolour.currentText() == 'Default (Categorical)':
-        n_colours = 10
-        graphcols = px.colors.qualitative.Plotly
-    else:
-        n_colours = len(multi_values)
-        graphcols = pc.sample_colorscale(px.colors.sequential.Magma, n_colours)
+    # Get colour scheme and apply it
+    curr_colscheme = self.selcolour.currentText()
+    if curr_colscheme in self.discrete_colour_map.keys():
+        graphcols = self.discrete_colour_map[curr_colscheme]
+    elif curr_colscheme in self.continuous_colour_map.keys():
+        graphcols = pc.sample_colorscale(self.continuous_colour_map[curr_colscheme], len(multi_values))
+    n_colours = len(graphcols)
+
 
     # --- 2-AXIS PLOT ---
     if not('Polar' in plot_type):
