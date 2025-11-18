@@ -19,25 +19,24 @@ importlib.reload(myal)
 def check_location(self):
 
     # Look for Location
-    self.lat, self.lon, self.time_zone, self.civil_utc, self.local_utc = (
+    self.lat, self.lon, self.time_zone, self.civil_utc, self.local_utc, res_loc = (
         myal.get_location_coord(self.location_name_field.text()))
     self.locationname = self.location_name_field.text()
-    if not self.local_utc:
-        self.check_result_field.setText('NOT FOUND')
-        self.lat_field.setText('')
-        self.lon_field.setText('')
-        self.civilutc_field.setText('')
-        self.localutc_field.setText('')
-        self.timezone_field.setText('')
-        self.update_btn.setEnabled(False)
-    else:
-        self.check_result_field.setText('OK')
+    self.check_result_field.setText(res_loc)
+    if self.local_utc != []:
         self.lat_field.setText(str(self.lat))
         self.lon_field.setText(str(self.lon))
         self.civilutc_field.setText(str(self.civil_utc))
         self.localutc_field.setText(str(self.local_utc))
         self.timezone_field.setText(self.time_zone)
         self.update_btn.setEnabled(True)
+    else:
+        self.lat_field.setText('')
+        self.lon_field.setText('')
+        self.civilutc_field.setText('')
+        self.localutc_field.setText('')
+        self.timezone_field.setText('')
+        self.update_btn.setEnabled(False)
 
 
 
