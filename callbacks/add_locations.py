@@ -98,7 +98,7 @@ class AddLocationDialog(QDialog):
         self.timezone_field = QLineEdit()
         self.timezone_field.setReadOnly(True)
         self.timezone_field.setStyleSheet('background-color: #e8e8e8; border: 1px solid #cccccc')
-        grid.addWidget(self.timezone_field, 3, 1, 1, 2)
+        grid.addWidget(self.timezone_field, 4, 1, 1, 2)
 
         self.update_btn = QPushButton('Update DB')
         self.update_btn.clicked.connect(lambda: alcb.update_db(self))
