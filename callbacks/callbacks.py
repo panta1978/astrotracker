@@ -9,6 +9,8 @@
 import os
 import sys
 import re
+from datetime import datetime
+import shutil
 import pandas as pd
 import sqlite3
 from pathlib import Path
@@ -395,8 +397,8 @@ def tminmaxsel(self):
 
 
 # --- ADD STARS ---
-def call_add_stars(window):
-    dlg = add_stars.AddStarDialog(window)
+def call_add_stars(self):
+    dlg = add_stars.AddStarDialog(self)
     dlg.exec()
 
 
@@ -408,8 +410,8 @@ def call_remove_stars(self):
 
 
 # --- ADD LOCATIONS ---
-def call_add_locations(window):
-    dlg = add_locations.AddLocationDialog(window)
+def call_add_locations(self):
+    dlg = add_locations.AddLocationDialog(self)
     dlg.exec()
 
 
@@ -512,5 +514,81 @@ def build_colour_combo(self, width, height):
     combo.setMinimumWidth(200)
     return combo
 
+
+
+# --- EXPORT DB ---
+def call_db_export(self):
+
+    # Export File
+    today = datetime.now().strftime('%Y_%m_%d')
+    export_path, _ = QFileDialog.getSaveFileName(self,
+        'Export Database',
+        f'astrotracker-{today}.db',
+        'SQLite Database (*.db)'
+    )
+    if not export_path:
+        return
+
+    try:
+        shutil.copyfile(self.db_path, export_path)
+        QMessageBox.information(self, 'Success', 'Database exported successfully.')
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', f'Unable to export database:\n{e}')
+
+
+
+# --- IMPORT DB ---
+def call_db_import(self):
+
+    # Import File
+    import_path, _ = QFileDialog.getOpenFileName(
+        self,
+        'Import Database',
+        '',
+        'SQLite Database (*.db)'
+    )
+    if not import_path:
+        return
+
+    try:
+        shutil.copyfile(import_path, self.db_path)
+        init_data(self)
+        QMessageBox.information(self,
+            'Success',
+            'Database imported successfully.\n'
+            'Restart the app to make changes effective'
+        )
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', 'Unable to import database')
+
+
+
+# --- RESTORE DB ---
+def call_db_default(self):
+
+    reply = QMessageBox.question(self,
+        'Restore Default Database',
+        'This will delete your current data and restore the default database.\n'
+        'Do you want to continue?',
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+    )
+
+    if reply != QMessageBox.StandardButton.Yes:
+        return
+
+    # Delete DB File
+    try:
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', 'Unable to delete database')
+        return
+
+    # Show restart app message
+    QMessageBox.information(self,
+        'Restart Required',
+        'The default database has been restored.\n'
+        'Please restart AstroTracker for the changes to take effect.'
+    )
 
 

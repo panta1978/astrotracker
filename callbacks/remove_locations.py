@@ -47,7 +47,7 @@ def remove_locations(self):
             item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
             table.setItem(i, ni, item)
             ni += 1
-            
+
     table.setFixedWidth(tot_width + 40)
     for n, w in enumerate(col_widths):
         table.setColumnWidth(n, w)

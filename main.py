@@ -445,6 +445,19 @@ class MainWindow(QMainWindow):
                 self.actions[label] = action
             self.actions['Civil'].setChecked(True)
 
+            # DB Menu
+            self.db_menu = menubar.addMenu('Database')
+            db_export = QAction('Export Database', self)
+            self.db_menu.addAction(db_export)
+            db_export.triggered.connect(lambda: cb.call_db_export(self))
+            db_import = QAction('Import Database', self)
+            self.db_menu.addAction(db_import)
+            db_import.triggered.connect(lambda: cb.call_db_import(self))
+            self.db_menu.addSeparator()
+            db_default = QAction('Restore Default Database', self)
+            self.db_menu.addAction(db_default)
+            db_default.triggered.connect(lambda: cb.call_db_default(self))
+
             # Stars Menu
             self.star_menu = menubar.addMenu('Stars')
             star_add = QAction('Add Stars', self)
@@ -477,6 +490,7 @@ class MainWindow(QMainWindow):
             info_log = QAction('View Log File', self)
             info_log.triggered.connect(lambda: cb.show_errorlog(self, get_base_path))
             self.info_menu.addAction(info_log)
+            self.info_menu.addSeparator()
             info_about = QAction('About', self)
             info_about.triggered.connect(lambda: cb.show_about_dialog(self, get_base_path))
             self.info_menu.addAction(info_about)
