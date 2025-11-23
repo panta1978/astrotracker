@@ -17,28 +17,40 @@ from PyQt6.QtCore import Qt
 
 def remove_locations(self):
 
+    col_widths = [80, 240, 80, 80, 160, 80, 80]
+    tot_width = sum(col_widths)
+
     dialog = QDialog(self)
     dialog.setWindowTitle('Remove Locations')
-    dialog.resize(400, 600)
+    dialog.resize(tot_width + 60, 600)
     layout = QVBoxLayout(dialog)
 
     # Table with checkboxes
     table = QTableWidget()
     table.setRowCount(len(self.df_loc))
-    table.setColumnCount(2)
-    table.setHorizontalHeaderLabels(['Remove', 'Location'])
-    for i, location in enumerate(self.df_loc['location']):
+    table.setColumnCount(7)
+    table.setHorizontalHeaderLabels(
+        ['Remove', 'Location', 'Latitude', 'Longitude', 'Time Zone', 'Civil UTC', 'Local UTC']
+    )
+    for i, location in self.df_loc.iterrows():
         # Checkbox
         checkbox = QCheckBox()
         table.setCellWidget(i, 0, checkbox)
-        # Location name
-        item = QTableWidgetItem(location)
-        item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
-        table.setItem(i, 1, item)
-    table.setFixedWidth(370)
-    table.setColumnWidth(0, 80)
-    table.setColumnWidth(1, 280)
 
+        # Location info
+        ni = 1
+        for col in ['location', 'latitude', 'longitude', 'time_zone', 'civil_utc', 'local_utc']:
+            if type(location[col]) == str:
+                item = QTableWidgetItem(location[col])
+            else:
+                item = QTableWidgetItem(str(location[col]))
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
+            table.setItem(i, ni, item)
+            ni += 1
+            
+    table.setFixedWidth(tot_width + 40)
+    for n, w in enumerate(col_widths):
+        table.setColumnWidth(n, w)
     layout.addWidget(table)
 
     # --- Buttons ---
