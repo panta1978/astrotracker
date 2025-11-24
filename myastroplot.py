@@ -16,7 +16,6 @@ import plotly.express as px
 import plotly.colors as pc
 
 
-
 # --- LAUNCH PLOT (SINGLE) ---
 def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
@@ -288,7 +287,6 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     html_path = os.path.join(tmp_dir, 'plot.html')
     self.fig.write_html(html_path, include_plotlyjs='directory')
     self.webview.load(QUrl.fromLocalFile(html_path))
-
 
 
 # --- LAUNCH PLOT (SINGLE) ---
@@ -584,7 +582,6 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     html_path = os.path.join(tmp_dir, 'plot.html')
     self.fig.write_html(html_path, include_plotlyjs='directory')
     self.webview.load(QUrl.fromLocalFile(html_path))
-
 
 
 # --- Clip Date ---

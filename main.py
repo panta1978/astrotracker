@@ -34,14 +34,12 @@ importlib.reload(cb)
 IS_FROZEN = getattr(sys, 'frozen', False)
 
 
-
 # Get Base Path (for both dev and compiled environment)
 def get_base_path() -> str:
     if getattr(sys, 'frozen', False):
         return sys._MEIPASS
     # fallback if __file__ doesn't exist (e.g., interactive session)
     return os.path.dirname(__file__) if '__file__' in globals() else os.getcwd()
-
 
 
 # --- GLOBAL EXCEPTION HANDLING ---
@@ -92,7 +90,6 @@ def qt_exception_hook(exctype, value, tb):
         traceback.print_exc()
 
 
-
 # CLass to safely launch QApplication (exceptions managed)
 class SafeApplication(QApplication):
     def notify(self, receiver, event):
@@ -102,7 +99,6 @@ class SafeApplication(QApplication):
             qt_exception_hook(*sys.exc_info())
             # Returning False indicates the event was not handled; prevents crash.
             return False
-
 
 
 # --- MAIN WINDOW ---

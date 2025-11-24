@@ -24,7 +24,6 @@ from erfa import ErfaWarning
 warnings.simplefilter('ignore', ErfaWarning)
 
 
-
 # --- GET LOCATION INFO ---
 def get_location_coord(sel_location):
 
@@ -71,7 +70,6 @@ def get_location_coord(sel_location):
     return lat, lon, tz_name, fixed_utc, local_utc, 'OK'
 
 
-
 # --- GET STAR INFO ---
 def get_star_info(sel_star):
 
@@ -102,7 +100,6 @@ def get_star_info(sel_star):
     star_pm_ra = result['pmRA'][0]  # milliarcsec/year
     star_pm_dec = result['pmDE'][0]   # milliarcsec/year
     return vizier_name, star_ra0, star_dec0, star_pm_ra, star_pm_dec
-
 
 
 # --- GET SOLAR SYSTEM BODIES COORDINATES ---

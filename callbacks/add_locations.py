@@ -4,8 +4,6 @@
 # This file is part of the Astrotracker project.
 # See the LICENSE.txt file in the project root for full license information.
 
-# --- ADD LOCATIONS UI ---
-
 from PyQt6.QtWidgets import (
     QVBoxLayout, QLabel, QLineEdit, QPushButton, QDialog, QGridLayout
 )
@@ -18,7 +16,7 @@ importlib.reload(myal)
 importlib.reload(myap)
 importlib.reload(alcb)
 
-# --- ADD LOCATIONS ---
+# --- ADD LOCATIONS TO DB ---
 class AddLocationDialog(QDialog):
 
     def __init__(self, parent=None):

@@ -4,7 +4,6 @@
 # This file is part of the Astrotracker project.
 # See the LICENSE.txt file in the project root for full license information.
 
-# REMOVE LOCATIONS UI
 import sqlite3
 from PyQt6.QtWidgets import (
     QVBoxLayout, QPushButton, QSizePolicy,
@@ -14,7 +13,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 
-
+# --- REMOVE LOCATIONS FROM DB ---
 def remove_locations(self):
 
     col_widths = [80, 240, 80, 80, 160, 80, 80]

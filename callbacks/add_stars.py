@@ -4,8 +4,6 @@
 # This file is part of the Astrotracker project.
 # See the LICENSE.txt file in the project root for full license information.
 
-# --- ADD STARS UI ---
-
 from PyQt6.QtWidgets import (
     QVBoxLayout, QLabel, QLineEdit, QPushButton, QDialog, QGridLayout
 )
@@ -18,7 +16,8 @@ importlib.reload(myal)
 importlib.reload(myap)
 importlib.reload(ascb)
 
-# --- ADD STARS ---
+
+# --- ADD STARS TO DB ---
 class AddStarDialog(QDialog):
 
     def __init__(self, parent=None):

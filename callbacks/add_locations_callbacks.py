@@ -14,7 +14,6 @@ import myastrolib as myal
 importlib.reload(myal)
 
 
-
 # --- CHECK IF A LOCATION EXISTS
 def check_location(self):
 
@@ -37,7 +36,6 @@ def check_location(self):
         self.localutc_field.setText('')
         self.timezone_field.setText('')
         self.update_btn.setEnabled(False)
-
 
 
 # --- UPDATE DB

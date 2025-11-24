@@ -19,8 +19,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import QDate, QSize
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QPainter, QColor, QIcon
-
-import plotly.express as px
 import importlib
 import myastrolib as myal
 import myastroplot as myap
@@ -46,7 +44,6 @@ def resource_path(relative_path):
         return os.path.join(base_path, relative_path)
 
 
-
 # --- Read DB Routine ---
 def read_db(self):
     conn = None
@@ -59,7 +56,6 @@ def read_db(self):
             conn.close()
 
 
-
 # --- Restore DB Routine ---
 def restore_db(self):
     sql_file = resource_path('db_backup.sql')
@@ -69,7 +65,6 @@ def restore_db(self):
             sql_script = f.read()
         cursor.executescript(sql_script)
         conn.commit()
-
 
 
 # --- INIT ---
@@ -102,7 +97,6 @@ def init_data(self):
     self.sel_time = 'Civil'
 
 
-
 # --- TIME TYPE (CIVIL, LOCAL, GREENWICH) ---
 def set_time_type(self, curr_label):
     # Make selected one checked, others unchecked
@@ -110,7 +104,6 @@ def set_time_type(self, curr_label):
         act.setChecked(label == curr_label)
         self.sel_time = curr_label
     self.recalc = True
-
 
 
 # --- Get Multi Values Routine ---
@@ -126,7 +119,6 @@ def get_multi_values(multi_mode, removeduplicates, self):
     if removeduplicates:
         multi_values = list(dict.fromkeys(multi_values))
     return multi_values
-
 
 
 # --- UPDATE PLOT ---
@@ -246,11 +238,9 @@ def update_plot(self):
             self.curr_graph = 'Equatorial_Polar_S'
 
 
-
 # --- TIME STEP CHANGED ---
 def change_objparam(self):
     self.recalc = True
-
 
 
 # --- MULTI DATA SELECTION ---
@@ -353,7 +343,6 @@ def selmultidata(self):
     self.recalc = True
 
 
-
 # ---  EXPORT DATA ---
 def export(self, format):
 
@@ -386,7 +375,6 @@ def export(self, format):
         QMessageBox.critical(self, 'Error', f'Could not save file:\n{str(e)}')
 
 
-
 # --- SELECT / UNSELECT MIN/MAX TIME
 def tminmaxsel(self):
     is_chk = self.tminmaxsel.isChecked()
@@ -395,18 +383,15 @@ def tminmaxsel(self):
     self.recalc = True
 
 
-
 # --- ADD STARS ---
 def call_add_stars(self):
     dlg = add_stars.AddStarDialog(self)
     dlg.exec()
 
 
-
 # --- REMOVE STARS ---
 def call_remove_stars(self):
     remove_stars.remove_stars(self)
-
 
 
 # --- ADD LOCATIONS ---
@@ -415,11 +400,9 @@ def call_add_locations(self):
     dlg.exec()
 
 
-
 # --- REMOVE LOCATIONS ---
 def call_remove_locations(self):
     remove_locations.remove_locations(self)
-
 
 
 # --- ABOUT DIALOG ---
@@ -443,7 +426,6 @@ def show_errorlog(self, get_base_path):
         )
 
 
-
 # --- ABOUT DIALOG ---
 def show_about_dialog(self, get_base_path):
     base_path = get_base_path()
@@ -460,7 +442,6 @@ def show_about_dialog(self, get_base_path):
             f'See <a href="file:///{lic_path}">LICENSE.txt</a> for full details.'
         )
     QMessageBox.about(self, 'About Astrotracker', text)
-
 
 
 # Colour icon
@@ -494,7 +475,6 @@ def make_colour_icon(colours, width, height, max_cols=12):
     return QIcon(pix)
 
 
-
 # --- CREATE COLOUR BOX ---
 def build_colour_combo(self, width, height):
     combo = QComboBox()
@@ -515,7 +495,6 @@ def build_colour_combo(self, width, height):
     return combo
 
 
-
 # --- EXPORT DB ---
 def call_db_export(self):
 
@@ -534,7 +513,6 @@ def call_db_export(self):
         QMessageBox.information(self, 'Success', 'Database exported successfully.')
     except Exception as e:
         QMessageBox.critical(self, 'Error', f'Unable to export database:\n{e}')
-
 
 
 # --- IMPORT DB ---
@@ -560,7 +538,6 @@ def call_db_import(self):
         )
     except Exception as e:
         QMessageBox.critical(self, 'Error', 'Unable to import database')
-
 
 
 # --- RESTORE DB ---
@@ -590,5 +567,3 @@ def call_db_default(self):
         'The default database has been restored.\n'
         'Please restart AstroTracker for the changes to take effect.'
     )
-
-
