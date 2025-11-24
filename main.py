@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QAction, QFont, QIcon, QPixmap
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import Qt, QDate, QTimer, QTime
+import plotly.express as px
 from astroquery.simbad import Simbad
 Simbad.TIMEOUT = 2
 import importlib
@@ -33,14 +34,12 @@ importlib.reload(cb)
 IS_FROZEN = getattr(sys, 'frozen', False)
 
 
-
 # Get Base Path (for both dev and compiled environment)
 def get_base_path() -> str:
     if getattr(sys, 'frozen', False):
         return sys._MEIPASS
     # fallback if __file__ doesn't exist (e.g., interactive session)
     return os.path.dirname(__file__) if '__file__' in globals() else os.getcwd()
-
 
 
 # --- GLOBAL EXCEPTION HANDLING ---
@@ -91,7 +90,6 @@ def qt_exception_hook(exctype, value, tb):
         traceback.print_exc()
 
 
-
 # CLass to safely launch QApplication (exceptions managed)
 class SafeApplication(QApplication):
     def notify(self, receiver, event):
@@ -101,7 +99,6 @@ class SafeApplication(QApplication):
             qt_exception_hook(*sys.exc_info())
             # Returning False indicates the event was not handled; prevents crash.
             return False
-
 
 
 # --- MAIN WINDOW ---
@@ -120,7 +117,7 @@ class MainWindow(QMainWindow):
             # Window Setup
             super().__init__()
             self.setWindowTitle('Astrotracker')
-            self.ver = '1.4'
+            self.ver = '1.5'
             self.recalc = True
             self.multimin = 2
             self.multimax = 18
@@ -128,6 +125,22 @@ class MainWindow(QMainWindow):
             self.day_max = QDate(2100, 12, 31)
             cb.init_data(self)
             QTimer.singleShot(0, self.showMaximized)
+
+            # Colour schemes
+            self.discrete_colour_map = {
+                'Plotly': px.colors.qualitative.Plotly,
+                'Set1': px.colors.qualitative.Set1,
+                'Set2': px.colors.qualitative.Set2,
+                'Bold': px.colors.qualitative.Bold,
+                'Dark24': px.colors.qualitative.Dark24
+            }
+            self.continuous_colour_map = {
+                'Viridis': px.colors.sequential.Viridis,
+                'Plasma': px.colors.sequential.Plasma,
+                'Turbo': px.colors.sequential.Turbo,
+                'Oranges': px.colors.sequential.Oranges,
+                'Greens': px.colors.sequential.Greens
+            }
 
             # Central Widget / Layout
             central_widget = QWidget()
@@ -221,15 +234,30 @@ class MainWindow(QMainWindow):
 
             # Day/Night Filter
             self.daynight = QComboBox()
-            self.daynight.addItems(['Day and Night', 'Night Only', 'Day Only'])
-            self.daynight.setFixedWidth(150)
+            self.daynight.addItems(['Day and Night', 'Night Only', 'Night Only (+Twilight)', 'Day Only', 'Day Only (+Twilight)'])
+            self.daynight.setFixedWidth(170)
             sidemenu.addWidget(self.daynight)
 
             # Horizon Filter
             self.horizonview = QComboBox()
             self.horizonview.addItems(['All positions', 'Above Horizon'])
-            self.horizonview.setFixedWidth(150)
+            self.horizonview.setFixedWidth(170)
             sidemenu.addWidget(self.horizonview)
+
+            # Twilight Menu
+            twilsel = QHBoxLayout()
+            twilsel.setContentsMargins(0, 0, 0, 0)
+            label_twilsel = QLabel('Twilight Thresh.')
+            twilsel.addWidget(label_twilsel)
+            self.twilsel = QSpinBox()
+            self.twilsel.setRange(-18, -3)
+            self.twilsel.setSingleStep(1)
+            self.twilsel.setValue(-6)
+            twilsel.addWidget(self.twilsel)
+            twilsel.addSpacerItem(QSpacerItem(5, 5, QSizePolicy.Policy.Expanding))
+            twilsel_widget = QWidget()
+            twilsel_widget.setLayout(twilsel)
+            sidemenu.addWidget(twilsel_widget)
             sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
             # Graph Options Label
@@ -341,10 +369,7 @@ class MainWindow(QMainWindow):
             label_selcolour.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             multidatamenu.addWidget(label_selcolour)
             self.selcolour = QComboBox()
-            self.selcolour.addItems([
-                'Default (Categorical)',
-                'Magma (Sequential)'
-            ])
+            self.selcolour = cb.build_colour_combo(self, width=100, height=15)
             self.selcolour.setFixedWidth(180)
             self.selcolour.setEnabled(False)
             multidatamenu.addWidget(self.selcolour)
@@ -416,6 +441,19 @@ class MainWindow(QMainWindow):
                 self.actions[label] = action
             self.actions['Civil'].setChecked(True)
 
+            # DB Menu
+            self.db_menu = menubar.addMenu('Database')
+            db_export = QAction('Export Database', self)
+            self.db_menu.addAction(db_export)
+            db_export.triggered.connect(lambda: cb.call_db_export(self))
+            db_import = QAction('Import Database', self)
+            self.db_menu.addAction(db_import)
+            db_import.triggered.connect(lambda: cb.call_db_import(self))
+            self.db_menu.addSeparator()
+            db_default = QAction('Restore Default Database', self)
+            self.db_menu.addAction(db_default)
+            db_default.triggered.connect(lambda: cb.call_db_default(self))
+
             # Stars Menu
             self.star_menu = menubar.addMenu('Stars')
             star_add = QAction('Add Stars', self)
@@ -448,6 +486,7 @@ class MainWindow(QMainWindow):
             info_log = QAction('View Log File', self)
             info_log.triggered.connect(lambda: cb.show_errorlog(self, get_base_path))
             self.info_menu.addAction(info_log)
+            self.info_menu.addSeparator()
             info_about = QAction('About', self)
             info_about.triggered.connect(lambda: cb.show_about_dialog(self, get_base_path))
             self.info_menu.addAction(info_about)

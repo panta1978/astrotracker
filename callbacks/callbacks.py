@@ -9,13 +9,16 @@
 import os
 import sys
 import re
+from datetime import datetime
+import shutil
 import pandas as pd
 import sqlite3
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
-from PyQt6.QtCore import QDate
+from PyQt6.QtCore import QDate, QSize
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QPainter, QColor, QIcon
 import importlib
 import myastrolib as myal
 import myastroplot as myap
@@ -41,7 +44,6 @@ def resource_path(relative_path):
         return os.path.join(base_path, relative_path)
 
 
-
 # --- Read DB Routine ---
 def read_db(self):
     conn = None
@@ -54,7 +56,6 @@ def read_db(self):
             conn.close()
 
 
-
 # --- Restore DB Routine ---
 def restore_db(self):
     sql_file = resource_path('db_backup.sql')
@@ -64,7 +65,6 @@ def restore_db(self):
             sql_script = f.read()
         cursor.executescript(sql_script)
         conn.commit()
-
 
 
 # --- INIT ---
@@ -97,7 +97,6 @@ def init_data(self):
     self.sel_time = 'Civil'
 
 
-
 # --- TIME TYPE (CIVIL, LOCAL, GREENWICH) ---
 def set_time_type(self, curr_label):
     # Make selected one checked, others unchecked
@@ -105,7 +104,6 @@ def set_time_type(self, curr_label):
         act.setChecked(label == curr_label)
         self.sel_time = curr_label
     self.recalc = True
-
 
 
 # --- Get Multi Values Routine ---
@@ -121,7 +119,6 @@ def get_multi_values(multi_mode, removeduplicates, self):
     if removeduplicates:
         multi_values = list(dict.fromkeys(multi_values))
     return multi_values
-
 
 
 # --- UPDATE PLOT ---
@@ -228,12 +225,22 @@ def update_plot(self):
     if multi_mode == 'Multi Locations': self.curr_location = 'MULTI_LOC'
     if multi_mode == 'Multi Days': curr_day = 'MULTI_DAY'
 
+    match self.select_graph.currentText():
+        case 'Azimuth/Altidude':
+            self.curr_graph = 'AzAlt'
+        case 'Azimuth/Altidude (Polar)':
+            self.curr_graph = 'AzAlt_Polar'
+        case 'Equatorial':
+            self.curr_graph = 'Equatorial'
+        case 'Equatorial (Polar, North)':
+            self.curr_graph = 'Equatorial_Polar_N'
+        case 'Equatorial (Polar, South)':
+            self.curr_graph = 'Equatorial_Polar_S'
 
 
 # --- TIME STEP CHANGED ---
 def change_objparam(self):
     self.recalc = True
-
 
 
 # --- MULTI DATA SELECTION ---
@@ -336,12 +343,14 @@ def selmultidata(self):
     self.recalc = True
 
 
-
 # ---  EXPORT DATA ---
 def export(self, format):
 
     # Default file name
-    file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+    if format == 'csv':
+        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+    else:
+        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}-{self.curr_graph}'
 
     format_up = format.upper()
     file_path, _ = QFileDialog.getSaveFileName(
@@ -366,7 +375,6 @@ def export(self, format):
         QMessageBox.critical(self, 'Error', f'Could not save file:\n{str(e)}')
 
 
-
 # --- SELECT / UNSELECT MIN/MAX TIME
 def tminmaxsel(self):
     is_chk = self.tminmaxsel.isChecked()
@@ -375,12 +383,10 @@ def tminmaxsel(self):
     self.recalc = True
 
 
-
 # --- ADD STARS ---
-def call_add_stars(window):
-    dlg = add_stars.AddStarDialog(window)
+def call_add_stars(self):
+    dlg = add_stars.AddStarDialog(self)
     dlg.exec()
-
 
 
 # --- REMOVE STARS ---
@@ -388,18 +394,15 @@ def call_remove_stars(self):
     remove_stars.remove_stars(self)
 
 
-
 # --- ADD LOCATIONS ---
-def call_add_locations(window):
-    dlg = add_locations.AddLocationDialog(window)
+def call_add_locations(self):
+    dlg = add_locations.AddLocationDialog(self)
     dlg.exec()
-
 
 
 # --- REMOVE LOCATIONS ---
 def call_remove_locations(self):
     remove_locations.remove_locations(self)
-
 
 
 # --- ABOUT DIALOG ---
@@ -423,7 +426,6 @@ def show_errorlog(self, get_base_path):
         )
 
 
-
 # --- ABOUT DIALOG ---
 def show_about_dialog(self, get_base_path):
     base_path = get_base_path()
@@ -442,3 +444,126 @@ def show_about_dialog(self, get_base_path):
     QMessageBox.about(self, 'About Astrotracker', text)
 
 
+# Colour icon
+def make_colour_icon(colours, width, height, max_cols=12):
+    """Create a horizontal colour bar icon from a list of colour hex strings."""
+
+    def rgb_to_hex(s):
+        """Convert 'rgb(r,g,b)' string to '#rrggbb'."""
+        if s.startswith('rgb'):
+            parts = s[s.find('(')+1 : s.find(')')].split(',')
+            r, g, b = [int(p) for p in parts]
+            return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+        return s  # already hex or name
+
+    # Trim to max_cols for very long palettes
+    colours = [rgb_to_hex(c) for c in colours]
+    if len(colours) > max_cols:
+        step = len(colours) / max_cols
+        colours = [colours[int(i * step)] for i in range(max_cols)]
+
+    pix = QPixmap(width, height)
+    pix.fill(QColor('transparent'))
+    painter = QPainter(pix)
+    n = len(colours)
+    if n == 0:
+        return QIcon(pix)
+    block_width = width / n
+    for i, col in enumerate(colours):
+        painter.fillRect(int(i * block_width), 0, int(block_width), height, QColor(col))
+    painter.end()
+    return QIcon(pix)
+
+
+# --- CREATE COLOUR BOX ---
+def build_colour_combo(self, width, height):
+    combo = QComboBox()
+    combo.setIconSize(QSize(width, height))
+    model = QStandardItemModel(combo)
+
+    # Merge discrete and continuous colour maps
+    schemes = self.discrete_colour_map | self.continuous_colour_map
+
+    for label, colours in schemes.items():
+        item = QStandardItem()
+        item.setText(label)
+        item.setIcon(make_colour_icon(colours, width, height))
+        model.appendRow(item)
+
+    combo.setModel(model)
+    combo.setMinimumWidth(200)
+    return combo
+
+
+# --- EXPORT DB ---
+def call_db_export(self):
+
+    # Export File
+    today = datetime.now().strftime('%Y_%m_%d')
+    export_path, _ = QFileDialog.getSaveFileName(self,
+        'Export Database',
+        f'astrotracker-{today}.db',
+        'SQLite Database (*.db)'
+    )
+    if not export_path:
+        return
+
+    try:
+        shutil.copyfile(self.db_path, export_path)
+        QMessageBox.information(self, 'Success', 'Database exported successfully.')
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', f'Unable to export database:\n{e}')
+
+
+# --- IMPORT DB ---
+def call_db_import(self):
+
+    # Import File
+    import_path, _ = QFileDialog.getOpenFileName(
+        self,
+        'Import Database',
+        '',
+        'SQLite Database (*.db)'
+    )
+    if not import_path:
+        return
+
+    try:
+        shutil.copyfile(import_path, self.db_path)
+        init_data(self)
+        QMessageBox.information(self,
+            'Success',
+            'Database imported successfully.\n'
+            'Restart the app to make changes effective'
+        )
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', 'Unable to import database')
+
+
+# --- RESTORE DB ---
+def call_db_default(self):
+
+    reply = QMessageBox.question(self,
+        'Restore Default Database',
+        'This will delete your current data and restore the default database.\n'
+        'Do you want to continue?',
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+    )
+
+    if reply != QMessageBox.StandardButton.Yes:
+        return
+
+    # Delete DB File
+    try:
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', 'Unable to delete database')
+        return
+
+    # Show restart app message
+    QMessageBox.information(self,
+        'Restart Required',
+        'The default database has been restored.\n'
+        'Please restart AstroTracker for the changes to take effect.'
+    )

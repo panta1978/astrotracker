@@ -4,8 +4,6 @@
 # This file is part of the Astrotracker project.
 # See the LICENSE.txt file in the project root for full license information.
 
-# --- REMOVE STARS UI ---
-
 import sqlite3
 from PyQt6.QtWidgets import (
     QVBoxLayout, QPushButton, QSizePolicy,
@@ -15,7 +13,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 
+# --- REMOVE STARS FROM DB ---
 def remove_stars(self):
+
+    col_widths = [80, 160, 120, 80, 80, 80, 80]
+    tot_width = sum(col_widths)
 
     dialog = QDialog(self)
     dialog.setWindowTitle('Remove Stars')
@@ -25,19 +27,29 @@ def remove_stars(self):
     # Table with checkboxes
     table = QTableWidget()
     table.setRowCount(len(self.df_stars))
-    table.setColumnCount(2)
-    table.setHorizontalHeaderLabels(['Remove', 'Star'])
-    for i, star in enumerate(self.df_stars['star']):
+    table.setColumnCount(8)
+    table.setHorizontalHeaderLabels(
+        ['Remove', 'Star', 'Vizier Name', 'RA', 'Dec', 'PM_RA', 'PM_DEC']
+    )
+    for i, star in self.df_stars.iterrows():
         # Checkbox
         checkbox = QCheckBox()
         table.setCellWidget(i, 0, checkbox)
-        # Star name
-        item = QTableWidgetItem(star)
-        item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
-        table.setItem(i, 1, item)
-    table.setFixedWidth(270)
-    table.setColumnWidth(0, 80)
-    table.setColumnWidth(1, 180)
+
+        # Star info
+        ni = 1
+        for col in ['star', 'vizier_name', 'ra0', 'dec0', 'pm_ra', 'pm_dec']:
+            if type(star[col]) == str:
+                item = QTableWidgetItem(star[col])
+            else:
+                item = QTableWidgetItem(str(star[col]))
+            item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Not editable
+            table.setItem(i, ni, item)
+            ni += 1
+
+    table.setFixedWidth(tot_width + 40)
+    for n, w in enumerate(col_widths):
+        table.setColumnWidth(n, w)
 
     layout.addWidget(table)
 

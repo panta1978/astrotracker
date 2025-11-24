@@ -4,6 +4,7 @@
 # This file is part of the Astrotracker project.
 # See the LICENSE.txt file in the project root for full license information.
 
+import re
 import pandas as pd
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
@@ -23,7 +24,6 @@ from erfa import ErfaWarning
 warnings.simplefilter('ignore', ErfaWarning)
 
 
-
 # --- GET LOCATION INFO ---
 def get_location_coord(sel_location):
 
@@ -31,31 +31,43 @@ def get_location_coord(sel_location):
     lat, lon, tz_name, fixed_utc, local_utc = [], [], [], [], []
     current_year = datetime.now().year
 
-    geolocator = Nominatim(user_agent='city_locator')
-    location = geolocator.geocode(sel_location)
+    # Regexp to get lat/lon pattern
+    latlon_pattern = re.compile(r'''
+        ^\s*                        # optional leading spaces
+        ([+-]?(?:\d+(?:\.\d*)?|\.\d+))   # latitude number (capture)
+        \s*,\s*                     # comma with optional spaces
+        ([+-]?(?:\d+(?:\.\d*)?|\.\d+))   # longitude number (capture)
+        \s*$                        # optional trailing spaces
+    ''', re.VERBOSE)
+    m = latlon_pattern.match(sel_location)
+    if m:
+        lat, lon = float(m.group(1)), float(m.group(2))
+        if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+            return [], [], [], [], [], 'Out of Range'
 
-    if location: # Location found
+    else: # Look for city
+        geolocator = Nominatim(user_agent='city_locator')
+        location = geolocator.geocode(sel_location)
+        if location: # Location found
+            lat, lon = location.latitude, location.longitude
+        else: # Location not found
+            return [], [], [], [], [], 'NOT FOUND'
 
-        # Get Latitude, Longitude, and Time Zone
-        lat, lon = location.latitude, location.longitude
-        tf_i = TimezoneFinder()
-        tz_name = tf_i.timezone_at(lat=lat, lng=lon)
+    # Timezone
+    tf_i = TimezoneFinder()
+    tz_name = tf_i.timezone_at(lat=lat, lng=lon)
 
-        # Get UTC of Timezone without DST
-        tz_info = ZoneInfo(tz_name)
-        if lat >= 0: # Northern Hemisphere. Consider Jan, 1st
-            fixed_utc = tz_info.utcoffset(datetime(current_year, 1, 1)).total_seconds()/3600
-        else: # Southern Hemisphere. Consider Jul, 1st
-            fixed_utc = tz_info.utcoffset(datetime(current_year, 7, 1)).total_seconds()/3600
+    # Get UTC of Timezone without DST
+    tz_info = ZoneInfo(tz_name)
+    if lat >= 0: # Northern Hemisphere. Consider Jan, 1st
+        fixed_utc = tz_info.utcoffset(datetime(current_year, 1, 1)).total_seconds()/3600
+    else: # Southern Hemisphere. Consider Jul, 1st
+        fixed_utc = tz_info.utcoffset(datetime(current_year, 7, 1)).total_seconds()/3600
 
-        # Get Local Time
-        local_utc = lon / 15
+    # Get Local Time
+    local_utc = lon / 15
 
-    else: # Location not found
-        print(f'Location {sel_location} not found. Skipped')
-
-    return lat, lon, tz_name, fixed_utc, local_utc
-
+    return lat, lon, tz_name, fixed_utc, local_utc, 'OK'
 
 
 # --- GET STAR INFO ---
@@ -88,7 +100,6 @@ def get_star_info(sel_star):
     star_pm_ra = result['pmRA'][0]  # milliarcsec/year
     star_pm_dec = result['pmDE'][0]   # milliarcsec/year
     return vizier_name, star_ra0, star_dec0, star_pm_ra, star_pm_dec
-
 
 
 # --- GET SOLAR SYSTEM BODIES COORDINATES ---

@@ -14,7 +14,6 @@ import myastrolib as myal
 importlib.reload(myal)
 
 
-
 # --- CHECK IF A STAR EXISTS
 def check_star(self):
 
@@ -39,7 +38,6 @@ def check_star(self):
         self.pm_dec_field.setText(str(self.pm_dec))
         self.vizier_field.setText(self.vizier_name)
         self.update_btn.setEnabled(True)
-
 
 
 # --- UPDATE DB
@@ -72,5 +70,3 @@ def update_db(self):
     with sqlite3.connect(self.main.db_path) as conn:
         self.main.df_stars.to_sql('STARS', conn, if_exists='replace', index=False)
         QMessageBox.information(self, 'Success', 'DB updated')
-
-
