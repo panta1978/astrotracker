@@ -470,7 +470,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
             self.fig.add_trace(go.Scatter(x=x_gr[multi_value], y=y1s[multi_value], mode='lines',
-                line=dict(color=graphcols[nv], width=2),
+                line=dict(color=graphcols[nv % n_colours], width=2),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value), row=1, col=1)
 
