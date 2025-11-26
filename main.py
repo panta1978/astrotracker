@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
             # Window Setup
             super().__init__()
             self.setWindowTitle('Astrotracker')
-            self.ver = '1.5'
+            self.ver = '1.6'
             self.recalc = True
             self.multimin = 2
             self.multimax = 18
