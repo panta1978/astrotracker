@@ -1,0 +1,4 @@
+# Ensure SQL files are counted as SQL
+*.sql linguist-language=SQL
+*.sql linguist-vendored=false
+*.sql linguist-generated=false
