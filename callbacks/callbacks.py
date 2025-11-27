@@ -9,6 +9,7 @@
 import os
 import sys
 import re
+import yaml
 from datetime import datetime
 import shutil
 import pandas as pd
@@ -248,11 +249,11 @@ def selmultidata(self):
 
     # Mode Type
     multi_mode = self.selmultidata.currentText()
-
     # Enable / Disable multitable and upper buttons
-    enabs = [True, True, True, True]
+    enabs = [True, True, True, True, True]
     if multi_mode == 'Single Data':
         enabs[0] = False
+        enabs[4] = False
         multi_options = []
     if multi_mode == 'Multi Objects':
         enabs[1] = False
@@ -267,6 +268,7 @@ def selmultidata(self):
     self.select_object.setEnabled(enabs[1])
     self.select_location.setEnabled(enabs[2])
     self.select_day.setEnabled(enabs[3])
+    self.multidata_menu.setEnabled(enabs[4])
 
     # Enable / Disable other controls
     if multi_mode == 'Single Data':
@@ -567,3 +569,147 @@ def call_db_default(self):
         'The default database has been restored.\n'
         'Please restart AstroTracker for the changes to take effect.'
     )
+
+
+# --- Export Multi Data in .yaml file ---
+def multidata_export(self):
+
+    file_path, _ = QFileDialog.getSaveFileName(
+        self, f'Save YAML File', 'multidata.yaml', 'YAML Files (*.yaml)'
+    )
+    if not file_path:
+        return
+
+    try:
+        # Ensure it ends with .yaml
+        if not file_path.lower().endswith('.yaml'):
+            file_path += '.yaml'
+
+        # Export Data
+        multi_mode = self.selmultidata.currentText()
+        multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=True, self=self)
+        if multi_mode == 'Multi Days':
+            multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
+            multi_values = list(dict.fromkeys(multi_values))
+        config = {
+            'multi_mode': multi_mode,
+            'items': multi_values
+        }
+        with open(file_path, 'w') as f:
+            yaml.dump(config, f, sort_keys=False)
+        QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
+
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', f'Could not save file:\n{str(e)}')
+
+
+# --- Import Multi Data .yaml file ---
+def multidata_import(self):
+
+    file_path, _ = QFileDialog.getOpenFileName(
+        self, 'Open YAML File', '', 'YAML Files (*.yaml)'
+    )
+    if not file_path:
+        return
+
+    # Import Data
+    with open(file_path, 'r') as f:
+        config = yaml.safe_load(f)
+        multi_mode = config['multi_mode']
+        items = config['items']
+        n_items = len(items)
+
+        # Set Multi Type
+        if multi_mode == 'Multi Objects': nidx = 1
+        elif multi_mode == 'Multi Locations': nidx = 2
+        elif multi_mode == 'Multi Days': nidx = 3
+        else: nidx = None # Error
+        self.selmultidata.setCurrentIndex(nidx)
+
+        # Set number of data
+        self.nrows.setValue(n_items)
+
+        # Write Table (Multi Days)
+        if multi_mode == 'Multi Days': # Multi Days
+
+            for row in range(n_items):
+                combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+                if combo is not None:
+                    y, m, d = map(int, items[row].split('-'))
+                    qdate = QDate(y, m, d)
+                    self.multitable.cellWidget(row, 0).setDate(qdate)
+
+        # Write Table (Multi Objects or Multi Locations)
+        else:
+
+            # Look for missing Objects / Locations
+            if multi_mode == 'Multi Locations': search_x = self.df_loc.location
+            elif multi_mode == 'Multi Objects': search_x = self.df_loc.object
+            items_missing = [i for i in items if i not in list(search_x)]
+
+            # Manage missing parts
+            if items_missing:
+                message = (
+                    'The following locations are missing:\n' +
+                    'Do you want to add them to the database?' +
+                    ''.join(f'\n- {im}' for im in items_missing)
+                )
+                reply = QMessageBox.question(self, 'Add missing locations', message,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+
+                if reply != QMessageBox.StandardButton.Yes: # Exclude all missing items
+                    items_exclude = items_missing
+
+                else: # Search for missing items. If found, update the DB. If not, exclide them
+                    items_exclude = []
+                    for im in items_missing:
+                        lat, lon, time_zone, civil_utc, local_utc, _ = (
+                            myal.get_location_coord(im))
+                        if local_utc != []:
+                            print(f'{im} found')
+                            self.df_loc.loc[len(self.df_loc)] = {
+                                'id': max(self.df_loc.id) + 1,
+                                'location': im,
+                                'latitude': lat,
+                                'longitude': lon,
+                                'time_zone': time_zone,
+                                'civil_utc': civil_utc,
+                                'local_utc': local_utc
+                            }
+                            self.df_loc.sort_values(by='location', inplace=True)
+
+                        else:
+                            items_exclude.append(im)
+
+                    # Warning if some items are not found
+                    if items_exclude:
+                        message = (
+                            'The following locations have not been found:\n' +
+                            ''.join(f'\n- {im}' for im in items_exclude)
+                        )
+                        QMessageBox.information(self, 'Missing locations', message)
+
+                    # Update GUI
+                    self.select_location.clear()
+                    self.select_location.addItems(self.df_loc.location.tolist())
+                    if self.select_location.count() > 0:
+                        self.select_location.setCurrentIndex(0)
+
+                    # Update DB
+                    with sqlite3.connect(self.db_path) as conn:
+                        self.df_loc.to_sql('LOCATIONS', conn, if_exists='replace', index=False)
+                        QMessageBox.information(self, 'Success', 'DB updated')
+
+            # Add items
+            items_add = [i for i in items if i not in items_exclude]
+            n_items_a = len(items_add)
+            self.nrows.setValue(n_items_a)
+            for row in range(n_items_a):
+                combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+                if combo is not None:
+                    self.multitable.cellWidget(row, 0).setCurrentText(items_add[row])
+
+        return
+
+

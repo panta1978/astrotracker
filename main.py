@@ -472,6 +472,16 @@ class MainWindow(QMainWindow):
             loc_remove.triggered.connect(lambda: cb.call_remove_locations(self))
             self.loc_menu.addAction(loc_remove)
 
+            # Multi Data Menu
+            self.multidata_menu = menubar.addMenu('Multi Data')
+            self.multidata_menu.setEnabled(False)
+            multidata_import = QAction('Import Multi Data', self)
+            multidata_import.triggered.connect(lambda: cb.multidata_import(self))
+            self.multidata_menu.addAction(multidata_import)
+            multidata_export = QAction('Export Multi Data', self)
+            multidata_export.triggered.connect(lambda: cb.multidata_export(self))
+            self.multidata_menu.addAction(multidata_export)
+
             # Export Menu
             self.export_menu = menubar.addMenu('Export')
             export_data = QAction('Export Data (.CSV)', self)
