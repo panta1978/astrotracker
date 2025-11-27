@@ -92,7 +92,6 @@ def get_star_info(sel_star):
             timeout=5
         ).query_object(sel_star, catalog=catalog)[0]
     except:
-        print(f'Star {sel_star} (Vizier name: {vizier_name}) not found. Skipped')
         return [], [], [], [], []
 
     star_ra0 = result['RAICRS'][0]

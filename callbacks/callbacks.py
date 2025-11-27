@@ -748,8 +748,6 @@ def multidata_import(self):
             # Add items
             items_add = [i for i in items if i not in items_exclude]
             n_items_a = len(items_add)
-            print('ITEMS ADD')
-            print(items_add)
             self.nrows.setValue(n_items_a)
             for row in range(n_items_a):
                 combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
