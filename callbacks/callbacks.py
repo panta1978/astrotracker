@@ -47,14 +47,13 @@ def resource_path(relative_path):
 
 # --- Read DB Routine ---
 def read_db(self):
-    conn = None
-    try:
-        conn = sqlite3.connect(self.db_path)
-        self.df_loc = pd.read_sql_query('SELECT * FROM LOCATIONS ORDER BY location', conn)
-        self.df_stars = pd.read_sql_query('SELECT * FROM STARS ORDER BY star', conn)
-    finally:
-        if conn is not None:
-            conn.close()
+    with sqlite3.connect(self.db_path) as conn:
+        self.df_loc = pd.read_sql_query(
+            'SELECT * FROM LOCATIONS ORDER BY location', conn
+        )
+        self.df_stars = pd.read_sql_query(
+            'SELECT * FROM STARS ORDER BY star', conn
+        )
 
 
 # --- Restore DB Routine ---
@@ -65,7 +64,6 @@ def restore_db(self):
         with open(sql_file, 'r', encoding='utf-8') as f:
             sql_script = f.read()
         cursor.executescript(sql_script)
-        conn.commit()
 
 
 # --- INIT ---
@@ -643,18 +641,19 @@ def multidata_import(self):
         else:
 
             # Look for missing Objects / Locations
-            if multi_mode == 'Multi Locations': search_x = self.df_loc.location
-            elif multi_mode == 'Multi Objects': search_x = self.df_loc.object
+            if multi_mode == 'Multi Locations': search_x = self.df_loc.location.tolist()
+            elif multi_mode == 'Multi Objects': search_x = self.ssobj + self.df_stars.star.tolist()
             items_missing = [i for i in items if i not in list(search_x)]
+            multi_label = multi_mode[6:].lower()
 
             # Manage missing parts
             if items_missing:
                 message = (
-                    'The following locations are missing:\n' +
+                    f'The following {multi_label} are missing:\n' +
                     'Do you want to add them to the database?' +
                     ''.join(f'\n- {im}' for im in items_missing)
                 )
-                reply = QMessageBox.question(self, 'Add missing locations', message,
+                reply = QMessageBox.question(self, f'Add missing {multi_label}', message,
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                 )
 
@@ -662,52 +661,104 @@ def multidata_import(self):
                     items_exclude = items_missing
 
                 else: # Search for missing items. If found, update the DB. If not, exclide them
-                    items_exclude = []
-                    for im in items_missing:
-                        lat, lon, time_zone, civil_utc, local_utc, _ = (
-                            myal.get_location_coord(im))
-                        if local_utc != []:
-                            print(f'{im} found')
-                            self.df_loc.loc[len(self.df_loc)] = {
-                                'id': max(self.df_loc.id) + 1,
-                                'location': im,
-                                'latitude': lat,
-                                'longitude': lon,
-                                'time_zone': time_zone,
-                                'civil_utc': civil_utc,
-                                'local_utc': local_utc
-                            }
-                            self.df_loc.sort_values(by='location', inplace=True)
 
-                        else:
-                            items_exclude.append(im)
+                    if multi_mode == 'Multi Locations':
+                        items_exclude = []
+                        for im in items_missing:
+                            lat, lon, time_zone, civil_utc, local_utc, _ = (
+                                myal.get_location_coord(im))
+                            if local_utc != []:
+                                self.df_loc.loc[len(self.df_loc)] = {
+                                    'id': max(self.df_loc.id) + 1,
+                                    'location': im,
+                                    'latitude': lat,
+                                    'longitude': lon,
+                                    'time_zone': time_zone,
+                                    'civil_utc': civil_utc,
+                                    'local_utc': local_utc
+                                }
+                                self.df_loc.sort_values(by='location', inplace=True)
 
-                    # Warning if some items are not found
-                    if items_exclude:
-                        message = (
-                            'The following locations have not been found:\n' +
-                            ''.join(f'\n- {im}' for im in items_exclude)
-                        )
-                        QMessageBox.information(self, 'Missing locations', message)
+                            else:
+                                items_exclude.append(im)
 
-                    # Update GUI
-                    self.select_location.clear()
-                    self.select_location.addItems(self.df_loc.location.tolist())
-                    if self.select_location.count() > 0:
-                        self.select_location.setCurrentIndex(0)
+                        # Warning if some items are not found
+                        if items_exclude:
+                            message = (
+                                f'The following {multi_label} have not been found:\n' +
+                                ''.join(f'\n- {im}' for im in items_exclude)
+                            )
+                            QMessageBox.information(self, f'Missing {multi_label}', message)
 
-                    # Update DB
-                    with sqlite3.connect(self.db_path) as conn:
-                        self.df_loc.to_sql('LOCATIONS', conn, if_exists='replace', index=False)
-                        QMessageBox.information(self, 'Success', 'DB updated')
+                        # Update GUI
+                        self.select_location.clear()
+                        self.select_location.addItems(self.df_loc.location.tolist())
+                        if self.select_location.count() > 0:
+                            self.select_location.setCurrentIndex(0)
+
+                        # Update DB
+                        with sqlite3.connect(self.db_path) as conn:
+                            self.df_loc.to_sql('LOCATIONS', conn, if_exists='replace', index=False)
+                            QMessageBox.information(self, 'Success', 'DB updated')
+                            #if conn is not None: conn.close()
+
+                    elif multi_mode == 'Multi Objects':
+                        items_exclude = []
+                        for im in items_missing:
+                            vizier_name, ra0, dec0, pm_ra, pm_dec = (
+                                myal.get_star_info(im))
+                            if vizier_name:
+                                self.df_stars.loc[len(self.df_stars)] = {
+                                    'id': max(self.df_stars.id) + 1,
+                                    'star': im,
+                                    'vizier_name': vizier_name,
+                                    'ra0': ra0,
+                                    'dec0': dec0,
+                                    'pm_ra': pm_ra,
+                                    'pm_dec': pm_dec
+                                }
+                                self.df_stars.sort_values(by='star', inplace=True)
+
+                            else:
+                                items_exclude.append(im)
+
+                        # Warning if some items are not found
+                        if items_exclude:
+                            message = (
+                                f'The following {multi_label} have not been found:\n' +
+                                ''.join(f'\n- {im}' for im in items_exclude)
+                            )
+                            QMessageBox.information(self, f'Missing {multi_label}', message)
+
+                        # Update GUI
+                        self.select_object.clear()
+                        self.select_object.addItems(self.ssobj + self.df_stars.star.tolist())
+                        if self.select_object.count() > 0:
+                            self.select_object.setCurrentIndex(0)
+
+                        # Update DB
+                        with sqlite3.connect(self.db_path) as conn:
+                            self.df_stars.to_sql('STARS', conn, if_exists='replace', index=False)
+                            QMessageBox.information(self, 'Success', 'DB updated')
+                            #if conn is not None: conn.close()
+
+            else:
+                items_exclude= []
 
             # Add items
             items_add = [i for i in items if i not in items_exclude]
             n_items_a = len(items_add)
+            print('ITEMS ADD')
+            print(items_add)
             self.nrows.setValue(n_items_a)
             for row in range(n_items_a):
                 combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
                 if combo is not None:
+                    self.multitable.cellWidget(row, 0).clear()
+                    if multi_mode == 'Multi Locations':
+                        self.multitable.cellWidget(row, 0).addItems(self.df_loc.location.tolist())
+                    elif multi_mode == 'Multi Objects':
+                        self.multitable.cellWidget(row, 0).addItems(self.ssobj + self.df_stars.star.tolist())
                     self.multitable.cellWidget(row, 0).setCurrentText(items_add[row])
 
         return
