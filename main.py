@@ -120,9 +120,11 @@ class MainWindow(QMainWindow):
             self.ver = '1.6'
             self.recalc = True
             self.multimin = 2
-            self.multimax = 18
+            self.multimax = 24
             self.day_min = QDate(1900, 1, 1)
             self.day_max = QDate(2100, 12, 31)
+            self.qt_date_format = 'dd/MM/yyyy'
+            self.py_date_format = r'%d/%m/%Y'
             cb.init_data(self)
             QTimer.singleShot(0, self.showMaximized)
 
@@ -181,6 +183,7 @@ class MainWindow(QMainWindow):
             top_row.addWidget(label_day)
 
             self.select_day = QDateEdit()
+            self.select_day.setDisplayFormat(self.qt_date_format)
             self.select_day.setDate(myap.capdate(QDate.currentDate(), self.day_min, self.day_max))
             self.select_day.setMinimumDate(self.day_min)
             self.select_day.setMaximumDate(self.day_max)
@@ -440,6 +443,16 @@ class MainWindow(QMainWindow):
                 time_menu.addAction(action)
                 self.actions[label] = action
             self.actions['Civil'].setChecked(True)
+
+            # Date Format Menu
+            dateformat_menu = menubar.addMenu('Date Format')
+            self.dateformats = {}
+            for label in ['Europe (dd/mm/yyyy)', 'US (mm/dd/yyyy)', 'ISO (yyyyy-dd-mm)']:
+                dateformat = QAction(label, self, checkable=True)
+                dateformat.triggered.connect(partial(cb.set_dateformat, self, label))
+                dateformat_menu.addAction(dateformat)
+                self.dateformats[label] = dateformat
+            self.dateformats['Europe (dd/mm/yyyy)'].setChecked(True)
 
             # DB Menu
             self.db_menu = menubar.addMenu('Database')

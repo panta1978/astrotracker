@@ -98,11 +98,40 @@ def init_data(self):
 
 # --- TIME TYPE (CIVIL, LOCAL, GREENWICH) ---
 def set_time_type(self, curr_label):
+
     # Make selected one checked, others unchecked
     for label, act in self.actions.items():
         act.setChecked(label == curr_label)
         self.sel_time = curr_label
     self.recalc = True
+
+
+# --- DATE FORMAT (EUROPE, US, ISO) ---
+def set_dateformat(self, curr_format):
+
+    # Make selected one checked, others unchecked
+    for dateformat, act in self.dateformats.items():
+        act.setChecked(dateformat == curr_format)
+
+    # Update formats
+    match curr_format:
+        case 'Europe (dd/mm/yyyy)':
+            self.qt_date_format = 'dd/MM/yyyy'
+            self.py_date_format = r'%d/%m/%Y'
+        case 'US (mm/dd/yyyy)':
+            self.qt_date_format = 'MM/dd/yyyy'
+            self.py_date_format = r'%m/%d/%Y'
+        case 'ISO (yyyyy-dd-mm)':
+            self.qt_date_format = 'yyyy-MM-dd'
+            self.py_date_format = r'%Y-%m-%d'
+
+    # Update UI
+    self.select_day.setDisplayFormat(self.qt_date_format)
+    if self.selmultidata.currentText() == 'Multi Days':
+        for row in range(self.multitable.rowCount()):
+            combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+            if combo is not None:
+                self.multitable.cellWidget(row, 0).setDisplayFormat(self.qt_date_format)
 
 
 # --- Get Multi Values Routine ---
@@ -129,7 +158,7 @@ def update_plot(self):
     # Get parameters (single mode)
     curr_obj = self.select_object.currentText()
     curr_location = self.select_location.currentText()
-    curr_day = self.select_day.date().toString('yyyy-MM-dd')
+    curr_day = self.select_day.date().toString(self.qt_date_format)
 
     # Get parameters (multiple mode)
     multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=True, self=self)
@@ -174,7 +203,7 @@ def update_plot(self):
 
     # Time info
     if multi_mode == 'Multi Days':
-        multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
+        multi_values = [m.toString(self.qt_date_format) for m in multi_values]
         multi_values = list(dict.fromkeys(multi_values))
         sel_days = multi_values
     else:
@@ -197,7 +226,8 @@ def update_plot(self):
             sel_days = sel_days,
             t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
             t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
-            t_delta = self.tdelta.value()
+            t_delta = self.tdelta.value(),
+            py_date_format = self.py_date_format
     )
 
     # Create Graph
@@ -330,7 +360,7 @@ def selmultidata(self):
         ni = 0
         for row in range(self.nrows.value()):
             dateedit = QDateEdit()
-            dateedit.setDisplayFormat('dd/MM/yyyy')
+            dateedit.setDisplayFormat(self.qt_date_format)
             dateedit.setDate(multi_values[ni])
             dateedit.setMinimumDate(self.day_min)
             dateedit.setMaximumDate(self.day_max)
@@ -587,8 +617,10 @@ def multidata_export(self):
         multi_mode = self.selmultidata.currentText()
         multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=True, self=self)
         if multi_mode == 'Multi Days':
-            multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
+            multi_values = [m.toString(self.qt_date_format) for m in multi_values]
             multi_values = list(dict.fromkeys(multi_values))
+        if multi_mode == 'Multi Days':
+            multi_mode = f'{multi_mode} ({self.py_date_format})'
         config = {
             'multi_mode': multi_mode,
             'items': multi_values
@@ -620,7 +652,7 @@ def multidata_import(self):
         # Set Multi Type
         if multi_mode == 'Multi Objects': nidx = 1
         elif multi_mode == 'Multi Locations': nidx = 2
-        elif multi_mode == 'Multi Days': nidx = 3
+        elif multi_mode.startswith('Multi Days'): nidx = 3
         else: nidx = None # Error
         self.selmultidata.setCurrentIndex(nidx)
 
@@ -628,12 +660,16 @@ def multidata_import(self):
         self.nrows.setValue(n_items)
 
         # Write Table (Multi Days)
-        if multi_mode == 'Multi Days': # Multi Days
+        if multi_mode.startswith('Multi Days'): # Multi Days
+            fmt = multi_mode[12:-1]
 
             for row in range(n_items):
                 combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
                 if combo is not None:
-                    y, m, d = map(int, items[row].split('-'))
+                    dt = datetime.strptime(items[row], fmt)
+                    y = dt.year
+                    m = dt.month
+                    d = dt.day
                     qdate = QDate(y, m, d)
                     self.multitable.cellWidget(row, 0).setDate(qdate)
 
@@ -700,7 +736,6 @@ def multidata_import(self):
                         with sqlite3.connect(self.db_path) as conn:
                             self.df_loc.to_sql('LOCATIONS', conn, if_exists='replace', index=False)
                             QMessageBox.information(self, 'Success', 'DB updated')
-                            #if conn is not None: conn.close()
 
                     elif multi_mode == 'Multi Objects':
                         items_exclude = []
@@ -740,7 +775,6 @@ def multidata_import(self):
                         with sqlite3.connect(self.db_path) as conn:
                             self.df_stars.to_sql('STARS', conn, if_exists='replace', index=False)
                             QMessageBox.information(self, 'Success', 'DB updated')
-                            #if conn is not None: conn.close()
 
             else:
                 items_exclude= []

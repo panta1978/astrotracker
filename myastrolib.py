@@ -106,7 +106,7 @@ def get_coords(
         sel_ssbodies,
         sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec,
         loc_names, lats, lons, tz_names, sel_time,
-        sel_days, t_min, t_max, t_delta):
+        sel_days, t_min, t_max, t_delta, py_date_format):
 
     df_s = [] # Init output structure
 
@@ -129,19 +129,24 @@ def get_coords(
 
         # Get local time (multiple days)
         delta_days = 1 if t_min >= t_max else 0
-        t_current_s = [pd.date_range(
-            start=f'{sel_day} {t_min}',
-            end=f'{pd.to_datetime(sel_day) + pd.Timedelta(days=delta_days):%Y-%m-%d} {t_max}',
-            freq=f'{t_delta}min',
-            tz=curr_tz,
-            nonexistent='shift_forward'
-        ) for sel_day in sel_days]
+        h_min, m_min = map(int, t_min.split(':'))
+        h_max, m_max = map(int, t_max.split(':'))
+        t_current_s = []
+        for sel_day in sel_days:
+            t0 = pd.to_datetime(sel_day, format=py_date_format)
+            t_start = t0 + pd.Timedelta(hours=h_min, minutes=m_min)
+            t_end = t0 + pd.Timedelta(days=delta_days) + pd.Timedelta(hours=h_max, minutes=m_max)
+            t_current_s.append(
+                pd.date_range(start=t_start, end=t_end, freq=f'{t_delta}min', tz=curr_tz, nonexistent='shift_forward'
+                )
+            )
+
         t_current = pd.concat([r.to_series() for r in t_current_s]).index
         n_day_s = [[i+1 for _ in row] for i, row in enumerate(t_current_s)]
         n_day = [elem for row in n_day_s for elem in row]
 
         # Day and location
-        day_sel = [f'{t:%Y-%m-%d}' for t in t_current]
+        day_sel = [f'{t.strftime(py_date_format)}' for t in t_current]
         loc_sel = [loc_name] * len(t_current)
         n_loc = [nl] * len(t_current)
 
