@@ -18,7 +18,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
-from PyQt6.QtCore import QDate, QSize
+from PyQt6.QtCore import QDate, QSize, QLocale
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QPainter, QColor, QIcon
 import importlib
 import myastrolib as myal
@@ -107,23 +107,15 @@ def set_time_type(self, curr_label):
 
 
 # --- DATE FORMAT (EUROPE, US, ISO) ---
-def set_dateformat(self, curr_format):
+def set_dateformat(self, curr_dateformat):
 
     # Make selected one checked, others unchecked
     for dateformat, act in self.dateformats.items():
-        act.setChecked(dateformat == curr_format)
+        act.setChecked(dateformat == curr_dateformat)
 
     # Update formats
-    match curr_format:
-        case 'Europe (dd/mm/yyyy)':
-            self.qt_date_format = 'dd/MM/yyyy'
-            self.py_date_format = r'%d/%m/%Y'
-        case 'US (mm/dd/yyyy)':
-            self.qt_date_format = 'MM/dd/yyyy'
-            self.py_date_format = r'%m/%d/%Y'
-        case 'ISO (yyyyy-dd-mm)':
-            self.qt_date_format = 'yyyy-MM-dd'
-            self.py_date_format = r'%Y-%m-%d'
+    self.curr_dateformat = curr_dateformat
+    self.py_date_format, self.qt_date_format = self.dateformatslist[curr_dateformat]
 
     # Update UI
     self.select_day.setDisplayFormat(self.qt_date_format)
@@ -360,6 +352,7 @@ def selmultidata(self):
         ni = 0
         for row in range(self.nrows.value()):
             dateedit = QDateEdit()
+            dateedit.setLocale(QLocale(QLocale.Language.English))
             dateedit.setDisplayFormat(self.qt_date_format)
             dateedit.setDate(multi_values[ni])
             dateedit.setMinimumDate(self.day_min)
@@ -620,7 +613,7 @@ def multidata_export(self):
             multi_values = [m.toString(self.qt_date_format) for m in multi_values]
             multi_values = list(dict.fromkeys(multi_values))
         if multi_mode == 'Multi Days':
-            multi_mode = f'{multi_mode} ({self.py_date_format})'
+            multi_mode = f'{multi_mode} ({self.curr_dateformat})'
         config = {
             'multi_mode': multi_mode,
             'items': multi_values
@@ -661,7 +654,8 @@ def multidata_import(self):
 
         # Write Table (Multi Days)
         if multi_mode.startswith('Multi Days'): # Multi Days
-            fmt = multi_mode[12:-1]
+            fmt_type = multi_mode[12:-1]
+            fmt = self.dateformatslist[fmt_type][0]
 
             for row in range(n_items):
                 combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
