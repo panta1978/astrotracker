@@ -102,11 +102,13 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         'Night Above', 'Twilight Above', 'Day Above',
         'Night Below', 'Twilight Below', 'Day Below'
     ]
-    is_night = sun_alt < twil_thresh
-    is_twilight = (sun_alt >= twil_thresh) & (sun_alt < 0)
-    is_day = sun_alt >= 0
-    is_above = star_alt >= 0
-    is_below = star_alt < 0
+    mask_sun = build_extended_masks(sun_alt, [twil_thresh, 0])
+    is_night = mask_sun[:,0]
+    is_twilight = mask_sun[:,1]
+    is_day = mask_sun[:,2]
+    mask_star = build_extended_masks(star_alt, [0])
+    is_below = mask_star[:,0]
+    is_above = mask_star[:,1]
 
     # Filter positions
     if self.daynight.currentText() == 'Night Only':
@@ -120,17 +122,13 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     if self.horizonview.currentText() == 'Above Horizon':
         positions = [p for p in positions if ('Above' in p)]
 
-    def extend(v): # Function to extend segments (for better plots)
-        v_ext = v | np.concatenate(([False], v[:-1])) | np.concatenate((v[1:], [False]))
-        return v_ext
-
     status = {
-        'Night Above': extend(is_night & is_above),
-        'Twilight Above': extend(is_twilight & is_above),
-        'Day Above': extend(is_day & is_above),
-        'Night Below': extend(is_night & is_below),
-        'Twilight Below': extend(is_twilight & is_below),
-        'Day Below': extend(is_day & is_below)
+        'Night Above': (is_night & is_above),
+        'Twilight Above': (is_twilight & is_above),
+        'Day Above': (is_day & is_above),
+        'Night Below': (is_night & is_below),
+        'Twilight Below': (is_twilight & is_below),
+        'Day Below': (is_day & is_below)
     }
 
     # For 2-axis plots, manage discontinuities of y1 (Azimuth) and y2 (hour angle)
@@ -592,3 +590,38 @@ def capdate(curr_date, date_min, date_max):
         return date_max
     else:
         return curr_date
+
+
+ # --- Function to extend night, twilight, day, above, and below segments for better plots
+def build_extended_masks(xpos, bounds):
+
+    #  Find State
+    xpos = np.asarray(xpos)
+    bounds = [-np.inf] + bounds + [np.inf]
+    state = np.zeros_like(xpos).astype(int)
+    for b in bounds[1:-1]:
+        state = state + (xpos >= b).astype(int)
+
+    # Basic Mask
+    mask_basic = np.zeros((len(xpos), len(bounds)-1), dtype=bool)
+    for i, (bd, bu) in enumerate(zip(bounds[:-1], bounds[1:])):
+        mask_basic[:, i] = (xpos >= bd) & (xpos < bu)
+
+    # Find transitions
+    n_tr = np.flatnonzero(state[1:]!=state[:-1])
+
+    # Updated mask (with extension to make plots continuous)
+    mask = mask_basic.copy()
+    for nt in n_tr:
+        if state[nt] > state[nt+1]: # Falling
+            dist_before = xpos[nt] - bounds[int(state[nt])]
+            dist_after = -xpos[nt+1] + bounds[int(state[nt+1]) + 1]
+        else: # Rising
+            dist_before = -xpos[nt] + bounds[int(state[nt] + 1)]
+            dist_after = xpos[nt+1] - bounds[int(state[nt+1])]
+        if dist_before >= dist_after:
+            mask[nt + 1, state[nt]] = True
+        else:
+            mask[nt, state[nt+1]] = True
+
+    return mask
