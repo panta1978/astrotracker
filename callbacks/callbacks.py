@@ -91,7 +91,7 @@ def init_data(self):
             read_db(self)
 
     # Other parameters
-    self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN']
+    self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE']
     self.df_out = []
     self.sel_time = 'Civil'
 

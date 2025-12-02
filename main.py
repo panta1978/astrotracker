@@ -130,10 +130,12 @@ class MainWindow(QMainWindow):
             # Date formats
             self.dateformatslist = {
                 'Europe': ('%d/%m/%Y', 'dd/MM/yyyy'),
-                'Europe Month Txt': ('%d %b %Y', 'dd MMM yyyy'),
+                'Europe, Abbreviated Text': ('%d %b %Y', 'dd MMM yyyy'),
+                'Europe, Full Text': ('%d %B %Y', 'dd MMMM yyyy'),
                 'US': ('%m/%d/%Y', 'MM/dd/yyyy'),
-                'US Month Txt': ('%b %d, %Y', 'MMM dd, yyyy'),
-                'ISO': ('%Y-%m-%d', 'yyyy-MM-dd'),
+                'US, Abbreviated Text': ('%b %d, %Y', 'MMM dd, yyyy'),
+                'US, Full Text': ('%B %d, %Y', 'MMMM dd, yyyy'),
+                'ISO 8601': ('%Y-%m-%d', 'yyyy-MM-dd'),
             }
             self.curr_dateformat = 'Europe'
             self.py_date_format, self.qt_date_format = self.dateformatslist[self.curr_dateformat]
@@ -194,6 +196,7 @@ class MainWindow(QMainWindow):
 
             self.select_day = QDateEdit()
             self.select_day.setLocale(QLocale(QLocale.Language.English))
+            #self.select_day.setFixedWidth(200)
             self.select_day.setDisplayFormat(self.qt_date_format)
             self.select_day.setDate(myap.capdate(QDate.currentDate(), self.day_min, self.day_max))
             self.select_day.setMinimumDate(self.day_min)
