@@ -224,12 +224,11 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             ticktext_th[18] = '<span style="font-size:18px;"><b>W</b></span>'
             ticktext_th[21] = '<span style="font-size:14px;"><b>NW</b></span>'
 
-        rng = 90 if ('Equatorial' in plot_type) and (self.halfhemisphere.isChecked()) else 180
         self.fig = go.Figure()
         self.fig.update_layout(
             polar=dict(
                 radialaxis=dict(
-                    range=[0, rng],  # because radius = elevation + 90
+                    range=[0, 90],  # because radius = elevation + 90
                     tickvals=np.arange(0, 181, 30),
                     ticktext=ticktext_r,
                     showline=True,
@@ -521,12 +520,11 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             ticktext_th[18] = '<span style="font-size:18px;"><b>W</b></span>'
             ticktext_th[21] = '<span style="font-size:14px;"><b>NW</b></span>'
 
-        rng = 90 if ('Equatorial' in plot_type) and (self.halfhemisphere.isChecked()) else 180
         self.fig = go.Figure()
         self.fig.update_layout(
             polar=dict(
                 radialaxis=dict(
-                    range=[0, rng],  # because radius = elevation + 90
+                    range=[0, 90],  # because radius = elevation + 90
                     tickvals=np.arange(0, 181, 30),
                     ticktext=ticktext_r,
                     showline=True,

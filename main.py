@@ -277,17 +277,6 @@ class MainWindow(QMainWindow):
             sidemenu.addWidget(twilsel_widget)
             sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
-            # Graph Options Label
-            label_eqpolar = QLabel('Equatorial Polar Graphs:')
-            label_eqpolar.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-            sidemenu.addWidget(label_eqpolar)
-
-            # Halph hemisphere for polar equatorial graphs
-            self.halfhemisphere = QCheckBox('Half Hemisphere')
-            self.halfhemisphere.setFixedWidth(150)
-            sidemenu.addWidget(self.halfhemisphere)
-            sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
-
             # Time MIN / MAX selection
             self.tminmaxsel = QCheckBox('Set Time min / max')
             self.tminmaxsel.setFixedWidth(150)
