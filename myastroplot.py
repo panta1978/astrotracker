@@ -177,7 +177,7 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             range=[x_gr.min(), x_gr.max()],
             row=1, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
+        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 15), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
         for position in positions:
@@ -193,7 +193,7 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         if 'Azimuth/Altidude' in plot_type:
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
-            tickvals2 = np.arange(0, 25, 3)
+            tickvals2 = np.arange(0, 25, 2)
         self.fig.update_xaxes(
             showticklabels=True, matches='x',
             range=[x_gr.min(), x_gr.max()],
@@ -210,7 +210,8 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         # Create Polar Graph
         tickvals_th = np.arange(0, 346, 15)
         ticktext_th = [f'{t}°' for t in tickvals_th]
-        ticktext_r = ['-90°','-60°','-30°','0°','30°','60°','90°']
+        tickvals_r = np.arange(0, 181, 30)
+        ticktext_r = [f'{v-90}°' for v in tickvals_r]
         if 'North' in plot_type:
             ticktext_r = ticktext_r[::-1]
 
@@ -228,8 +229,8 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         self.fig.update_layout(
             polar=dict(
                 radialaxis=dict(
-                    range=[0, 90],  # because radius = elevation + 90
-                    tickvals=np.arange(0, 181, 30),
+                    range=[0, 180],  # because radius = elevation + 90
+                    tickvals=tickvals_r,
                     ticktext=ticktext_r,
                     showline=True,
                     linewidth=1,
@@ -476,7 +477,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
             row=1, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
+        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 15), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
         for nv, multi_value in enumerate(multi_values):
@@ -490,7 +491,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         if 'Azimuth/Altidude' in plot_type:
             tickvals2 = np.arange(0, 361, 45)
         elif 'Equatorial' in plot_type:
-            tickvals2 = np.arange(0, 25, 3)
+            tickvals2 = np.arange(0, 25, 2)
         self.fig.update_xaxes(
             showticklabels=True, matches='x',
             range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
@@ -506,7 +507,8 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         # Create Polar Graph
         tickvals_th = np.arange(0, 346, 15)
         ticktext_th = [f'{t}°' for t in tickvals_th]
-        ticktext_r = ['-90°','-60°','-30°','0°','30°','60°','90°']
+        tickvals_r = np.arange(0, 181, 30)
+        ticktext_r = [f'{v-90}°' for v in tickvals_r]
         if 'North' in plot_type:
             ticktext_r = ticktext_r[::-1]
 
@@ -524,8 +526,8 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         self.fig.update_layout(
             polar=dict(
                 radialaxis=dict(
-                    range=[0, 90],  # because radius = elevation + 90
-                    tickvals=np.arange(0, 181, 30),
+                    range=[0, 180],  # because radius = elevation + 90
+                    tickvals=tickvals_r,
                     ticktext=ticktext_r,
                     showline=True,
                     linewidth=1,
