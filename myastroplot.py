@@ -150,7 +150,6 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         decs[position] = [val if sts else None for (val, sts) in zip(dec, status[position])]
 
 
-
     # --- 2-AXIS PLOT ---
     if not('Polar' in plot_type):
 
@@ -582,7 +581,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     self.webview.load(QUrl.fromLocalFile(html_path))
 
 
-# --- Clip Date ---
+# --- Cap Date between min and max value ---
 def capdate(curr_date, date_min, date_max):
     if curr_date < date_min:
         return date_min
@@ -592,7 +591,7 @@ def capdate(curr_date, date_min, date_max):
         return curr_date
 
 
- # --- Function to extend night, twilight, day, above, and below segments for better plots
+ # --- Function to extend night, twilight, day, above, and below segments for better plots ---
 def build_extended_masks(xpos, bounds):
 
     #  Find State
@@ -613,14 +612,14 @@ def build_extended_masks(xpos, bounds):
     # Updated mask (with extension to make plots continuous)
     mask = mask_basic.copy()
     for nt in n_tr:
-        if state[nt] > state[nt+1]: # Falling
+        if (state[nt] > state[nt+1]): # Falling
             dist_before = xpos[nt] - bounds[int(state[nt])]
             dist_after = -xpos[nt+1] + bounds[int(state[nt+1]) + 1]
         else: # Rising
             dist_before = -xpos[nt] + bounds[int(state[nt] + 1)]
             dist_after = xpos[nt+1] - bounds[int(state[nt+1])]
         if dist_before >= dist_after:
-            mask[nt + 1, state[nt]] = True
+            mask[nt+1, state[nt]] = True
         else:
             mask[nt, state[nt+1]] = True
 
