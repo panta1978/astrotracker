@@ -191,7 +191,7 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
         # Axes 2nd ROW
         if 'Azimuth/Altidude' in plot_type:
-            tickvals2 = np.arange(0, 361, 45)
+            tickvals2 = np.arange(0, 361, 30)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 2)
         self.fig.update_xaxes(
@@ -489,7 +489,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
 
         # Axes 2nd ROW
         if 'Azimuth/Altidude' in plot_type:
-            tickvals2 = np.arange(0, 361, 45)
+            tickvals2 = np.arange(0, 361, 30)
         elif 'Equatorial' in plot_type:
             tickvals2 = np.arange(0, 25, 2)
         self.fig.update_xaxes(
