@@ -105,14 +105,14 @@ def get_star_info(sel_star):
 def get_coords(
         sel_ssbodies,
         sel_stars, stars_ra0, stars_dec0, stars_pm_ra, stars_pm_dec,
-        loc_names, lats, lons, tz_names, sel_time,
+        loc_names, lats, lons, tz_names, civil_utcs, sel_time,
         sel_days, t_min, t_max, t_delta, py_date_format):
 
     df_s = [] # Init output structure
 
     # Loop through locations
     nl = 0
-    for lat, lon, loc_name, tz_name in zip(lats, lons, loc_names,tz_names):
+    for lat, lon, loc_name, tz_name, civil_utc in zip(lats, lons, loc_names,tz_names, civil_utcs):
         nl += 1
 
         # Create location
@@ -124,6 +124,7 @@ def get_coords(
 
         # Select Time Type
         if sel_time == 'Civil': curr_tz = tz_name
+        elif sel_time == 'Civil (no DST)': curr_tz = tzoffset(None, int(civil_utc * 3600))
         elif sel_time == 'Local': curr_tz = tzoffset(None, int((lon/15) * 3600))
         elif sel_time == 'Greenwich': curr_tz = 0
 

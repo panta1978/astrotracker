@@ -440,7 +440,7 @@ class MainWindow(QMainWindow):
             # Time Type Menu
             time_menu = menubar.addMenu('Time Type')
             self.actions = {}
-            for label in ['Civil', 'Local', 'Greenwich']:
+            for label in ['Civil', 'Civil (no DST)', 'Local', 'Greenwich']:
                 action = QAction(label, self, checkable=True)
                 action.triggered.connect(partial(cb.set_time_type, self, label))
                 time_menu.addAction(action)

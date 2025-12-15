@@ -186,12 +186,13 @@ def update_plot(self):
         sel_locations = multi_values
     else:
         sel_locations = [curr_location]
-    lats = [] ; lons = [] ; tz_names = []
+    lats = [] ; lons = [] ; tz_names = [] ; civil_utcs = []
     for sel_location in sel_locations:
         row = self.df_loc.loc[self.df_loc['location'] == sel_location].iloc[0]
         lats.append(row['latitude'])
         lons.append(row['longitude'])
         tz_names.append(row['time_zone'])
+        civil_utcs.append(row['civil_utc'])
 
     # Time info
     if multi_mode == 'Multi Days':
@@ -214,6 +215,7 @@ def update_plot(self):
             lats = lats,
             lons = lons,
             tz_names = tz_names,
+            civil_utcs = civil_utcs,
             sel_time = self.sel_time,
             sel_days = sel_days,
             t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
