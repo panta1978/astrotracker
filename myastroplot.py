@@ -102,11 +102,13 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         'Night Above', 'Twilight Above', 'Day Above',
         'Night Below', 'Twilight Below', 'Day Below'
     ]
-    is_night = sun_alt < twil_thresh
-    is_twilight = (sun_alt >= twil_thresh) & (sun_alt < 0)
-    is_day = sun_alt >= 0
-    is_above = star_alt >= 0
-    is_below = star_alt < 0
+    mask_sun = build_extended_masks(sun_alt, [twil_thresh, 0])
+    is_night = mask_sun[:,0]
+    is_twilight = mask_sun[:,1]
+    is_day = mask_sun[:,2]
+    mask_star = build_extended_masks(star_alt, [0])
+    is_below = mask_star[:,0]
+    is_above = mask_star[:,1]
 
     # Filter positions
     if self.daynight.currentText() == 'Night Only':
@@ -120,17 +122,13 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
     if self.horizonview.currentText() == 'Above Horizon':
         positions = [p for p in positions if ('Above' in p)]
 
-    def extend(v): # Function to extend segments (for better plots)
-        v_ext = v | np.concatenate(([False], v[:-1])) | np.concatenate((v[1:], [False]))
-        return v_ext
-
     status = {
-        'Night Above': extend(is_night & is_above),
-        'Twilight Above': extend(is_twilight & is_above),
-        'Day Above': extend(is_day & is_above),
-        'Night Below': extend(is_night & is_below),
-        'Twilight Below': extend(is_twilight & is_below),
-        'Day Below': extend(is_day & is_below)
+        'Night Above': (is_night & is_above),
+        'Twilight Above': (is_twilight & is_above),
+        'Day Above': (is_day & is_above),
+        'Night Below': (is_night & is_below),
+        'Twilight Below': (is_twilight & is_below),
+        'Day Below': (is_day & is_below)
     }
 
     # For 2-axis plots, manage discontinuities of y1 (Azimuth) and y2 (hour angle)
@@ -150,7 +148,6 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         alts[position] = [val if sts else None for (val, sts) in zip(alt, status[position])]
         has[position] = [val if sts else None for (val, sts) in zip(ha, status[position])]
         decs[position] = [val if sts else None for (val, sts) in zip(dec, status[position])]
-
 
 
     # --- 2-AXIS PLOT ---
@@ -180,7 +177,7 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             range=[x_gr.min(), x_gr.max()],
             row=1, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
+        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 15), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
         for position in positions:
@@ -194,9 +191,9 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
         # Axes 2nd ROW
         if 'Azimuth/Altidude' in plot_type:
-            tickvals2 = np.arange(0, 361, 45)
+            tickvals2 = np.arange(0, 361, 30)
         elif 'Equatorial' in plot_type:
-            tickvals2 = np.arange(0, 25, 3)
+            tickvals2 = np.arange(0, 25, 2)
         self.fig.update_xaxes(
             showticklabels=True, matches='x',
             range=[x_gr.min(), x_gr.max()],
@@ -213,7 +210,8 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
         # Create Polar Graph
         tickvals_th = np.arange(0, 346, 15)
         ticktext_th = [f'{t}°' for t in tickvals_th]
-        ticktext_r = ['-90°','-60°','-30°','0°','30°','60°','90°']
+        tickvals_r = np.arange(0, 181, 30)
+        ticktext_r = [f'{v-90}°' for v in tickvals_r]
         if 'North' in plot_type:
             ticktext_r = ticktext_r[::-1]
 
@@ -227,13 +225,12 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             ticktext_th[18] = '<span style="font-size:18px;"><b>W</b></span>'
             ticktext_th[21] = '<span style="font-size:14px;"><b>NW</b></span>'
 
-        rng = 90 if ('Equatorial' in plot_type) and (self.halfhemisphere.isChecked()) else 180
         self.fig = go.Figure()
         self.fig.update_layout(
             polar=dict(
                 radialaxis=dict(
-                    range=[0, rng],  # because radius = elevation + 90
-                    tickvals=np.arange(0, 181, 30),
+                    range=[0, 180],  # because radius = elevation + 90
+                    tickvals=tickvals_r,
                     ticktext=ticktext_r,
                     showline=True,
                     linewidth=1,
@@ -470,7 +467,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         for nv, multi_value in enumerate(multi_values):
             cust_data = list(zip(times[multi_value], azs[multi_value], alts[multi_value], has[multi_value], decs[multi_value]))
             self.fig.add_trace(go.Scatter(x=x_gr[multi_value], y=y1s[multi_value], mode='lines',
-                line=dict(color=graphcols[nv], width=2),
+                line=dict(color=graphcols[nv % n_colours], width=2),
                 customdata=cust_data, hovertemplate='<b>' + multi_value + '</b><br>'+hover_templ,
                 name=multi_value), row=1, col=1)
 
@@ -480,7 +477,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
             row=1, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 30), title_text=label1, row=1, col=1)
+        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 15), title_text=label1, row=1, col=1)
 
         # Add lines 2nd ROW
         for nv, multi_value in enumerate(multi_values):
@@ -492,9 +489,9 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
 
         # Axes 2nd ROW
         if 'Azimuth/Altidude' in plot_type:
-            tickvals2 = np.arange(0, 361, 45)
+            tickvals2 = np.arange(0, 361, 30)
         elif 'Equatorial' in plot_type:
-            tickvals2 = np.arange(0, 25, 3)
+            tickvals2 = np.arange(0, 25, 2)
         self.fig.update_xaxes(
             showticklabels=True, matches='x',
             range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
@@ -510,7 +507,8 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
         # Create Polar Graph
         tickvals_th = np.arange(0, 346, 15)
         ticktext_th = [f'{t}°' for t in tickvals_th]
-        ticktext_r = ['-90°','-60°','-30°','0°','30°','60°','90°']
+        tickvals_r = np.arange(0, 181, 30)
+        ticktext_r = [f'{v-90}°' for v in tickvals_r]
         if 'North' in plot_type:
             ticktext_r = ticktext_r[::-1]
 
@@ -524,13 +522,12 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             ticktext_th[18] = '<span style="font-size:18px;"><b>W</b></span>'
             ticktext_th[21] = '<span style="font-size:14px;"><b>NW</b></span>'
 
-        rng = 90 if ('Equatorial' in plot_type) and (self.halfhemisphere.isChecked()) else 180
         self.fig = go.Figure()
         self.fig.update_layout(
             polar=dict(
                 radialaxis=dict(
-                    range=[0, rng],  # because radius = elevation + 90
-                    tickvals=np.arange(0, 181, 30),
+                    range=[0, 180],  # because radius = elevation + 90
+                    tickvals=tickvals_r,
                     ticktext=ticktext_r,
                     showline=True,
                     linewidth=1,
@@ -584,7 +581,7 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
     self.webview.load(QUrl.fromLocalFile(html_path))
 
 
-# --- Clip Date ---
+# --- Cap Date between min and max value ---
 def capdate(curr_date, date_min, date_max):
     if curr_date < date_min:
         return date_min
@@ -592,3 +589,38 @@ def capdate(curr_date, date_min, date_max):
         return date_max
     else:
         return curr_date
+
+
+ # --- Function to extend night, twilight, day, above, and below segments for better plots ---
+def build_extended_masks(xpos, bounds):
+
+    #  Find State
+    xpos = np.asarray(xpos)
+    bounds = [-np.inf] + bounds + [np.inf]
+    state = np.zeros_like(xpos).astype(int)
+    for b in bounds[1:-1]:
+        state = state + (xpos >= b).astype(int)
+
+    # Basic Mask
+    mask_basic = np.zeros((len(xpos), len(bounds)-1), dtype=bool)
+    for i, (bd, bu) in enumerate(zip(bounds[:-1], bounds[1:])):
+        mask_basic[:, i] = (xpos >= bd) & (xpos < bu)
+
+    # Find transitions
+    n_tr = np.flatnonzero(state[1:]!=state[:-1])
+
+    # Updated mask (with extension to make plots continuous)
+    mask = mask_basic.copy()
+    for nt in n_tr:
+        if (state[nt] > state[nt+1]): # Falling
+            dist_before = xpos[nt] - bounds[int(state[nt])]
+            dist_after = -xpos[nt+1] + bounds[int(state[nt+1]) + 1]
+        else: # Rising
+            dist_before = -xpos[nt] + bounds[int(state[nt] + 1)]
+            dist_after = xpos[nt+1] - bounds[int(state[nt+1])]
+        if dist_before >= dist_after:
+            mask[nt+1, state[nt]] = True
+        else:
+            mask[nt, state[nt+1]] = True
+
+    return mask

@@ -9,6 +9,7 @@
 import os
 import sys
 import re
+import yaml
 from datetime import datetime
 import shutil
 import pandas as pd
@@ -17,7 +18,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QFileDialog, QMessageBox, QComboBox, QDateEdit
 )
-from PyQt6.QtCore import QDate, QSize
+from PyQt6.QtCore import QDate, QSize, QLocale
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QPixmap, QPainter, QColor, QIcon
 import importlib
 import myastrolib as myal
@@ -46,14 +47,13 @@ def resource_path(relative_path):
 
 # --- Read DB Routine ---
 def read_db(self):
-    conn = None
-    try:
-        conn = sqlite3.connect(self.db_path)
-        self.df_loc = pd.read_sql_query('SELECT * FROM LOCATIONS ORDER BY location', conn)
-        self.df_stars = pd.read_sql_query('SELECT * FROM STARS ORDER BY star', conn)
-    finally:
-        if conn is not None:
-            conn.close()
+    with sqlite3.connect(self.db_path) as conn:
+        self.df_loc = pd.read_sql_query(
+            'SELECT * FROM LOCATIONS ORDER BY location', conn
+        )
+        self.df_stars = pd.read_sql_query(
+            'SELECT * FROM STARS ORDER BY star', conn
+        )
 
 
 # --- Restore DB Routine ---
@@ -64,7 +64,6 @@ def restore_db(self):
         with open(sql_file, 'r', encoding='utf-8') as f:
             sql_script = f.read()
         cursor.executescript(sql_script)
-        conn.commit()
 
 
 # --- INIT ---
@@ -92,18 +91,39 @@ def init_data(self):
             read_db(self)
 
     # Other parameters
-    self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN']
+    self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE']
     self.df_out = []
     self.sel_time = 'Civil'
 
 
 # --- TIME TYPE (CIVIL, LOCAL, GREENWICH) ---
 def set_time_type(self, curr_label):
+
     # Make selected one checked, others unchecked
     for label, act in self.actions.items():
         act.setChecked(label == curr_label)
         self.sel_time = curr_label
     self.recalc = True
+
+
+# --- DATE FORMAT (EUROPE, US, ISO) ---
+def set_dateformat(self, curr_dateformat):
+
+    # Make selected one checked, others unchecked
+    for dateformat, act in self.dateformats.items():
+        act.setChecked(dateformat == curr_dateformat)
+
+    # Update formats
+    self.curr_dateformat = curr_dateformat
+    self.py_date_format, self.qt_date_format = self.dateformatslist[curr_dateformat]
+
+    # Update UI
+    self.select_day.setDisplayFormat(self.qt_date_format)
+    if self.selmultidata.currentText() == 'Multi Days':
+        for row in range(self.multitable.rowCount()):
+            combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+            if combo is not None:
+                self.multitable.cellWidget(row, 0).setDisplayFormat(self.qt_date_format)
 
 
 # --- Get Multi Values Routine ---
@@ -130,7 +150,7 @@ def update_plot(self):
     # Get parameters (single mode)
     curr_obj = self.select_object.currentText()
     curr_location = self.select_location.currentText()
-    curr_day = self.select_day.date().toString('yyyy-MM-dd')
+    curr_day = self.select_day.date().toString(self.qt_date_format)
 
     # Get parameters (multiple mode)
     multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=True, self=self)
@@ -166,16 +186,17 @@ def update_plot(self):
         sel_locations = multi_values
     else:
         sel_locations = [curr_location]
-    lats = [] ; lons = [] ; tz_names = []
+    lats = [] ; lons = [] ; tz_names = [] ; civil_utcs = []
     for sel_location in sel_locations:
         row = self.df_loc.loc[self.df_loc['location'] == sel_location].iloc[0]
         lats.append(row['latitude'])
         lons.append(row['longitude'])
         tz_names.append(row['time_zone'])
+        civil_utcs.append(row['civil_utc'])
 
     # Time info
     if multi_mode == 'Multi Days':
-        multi_values = [m.toString('yyyy-MM-dd') for m in multi_values]
+        multi_values = [m.toString(self.qt_date_format) for m in multi_values]
         multi_values = list(dict.fromkeys(multi_values))
         sel_days = multi_values
     else:
@@ -194,11 +215,13 @@ def update_plot(self):
             lats = lats,
             lons = lons,
             tz_names = tz_names,
+            civil_utcs = civil_utcs,
             sel_time = self.sel_time,
             sel_days = sel_days,
             t_min = self.tmin.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
             t_max = self.tmax.time().toString('HH:mm') if self.tminmaxsel.isChecked() else '00:00',
-            t_delta = self.tdelta.value()
+            t_delta = self.tdelta.value(),
+            py_date_format = self.py_date_format
     )
 
     # Create Graph
@@ -248,11 +271,11 @@ def selmultidata(self):
 
     # Mode Type
     multi_mode = self.selmultidata.currentText()
-
     # Enable / Disable multitable and upper buttons
-    enabs = [True, True, True, True]
+    enabs = [True, True, True, True, True]
     if multi_mode == 'Single Data':
         enabs[0] = False
+        enabs[4] = False
         multi_options = []
     if multi_mode == 'Multi Objects':
         enabs[1] = False
@@ -267,6 +290,7 @@ def selmultidata(self):
     self.select_object.setEnabled(enabs[1])
     self.select_location.setEnabled(enabs[2])
     self.select_day.setEnabled(enabs[3])
+    self.multidata_menu.setEnabled(enabs[4])
 
     # Enable / Disable other controls
     if multi_mode == 'Single Data':
@@ -330,7 +354,8 @@ def selmultidata(self):
         ni = 0
         for row in range(self.nrows.value()):
             dateedit = QDateEdit()
-            dateedit.setDisplayFormat('dd/MM/yyyy')
+            dateedit.setLocale(QLocale(QLocale.Language.English))
+            dateedit.setDisplayFormat(self.qt_date_format)
             dateedit.setDate(multi_values[ni])
             dateedit.setMinimumDate(self.day_min)
             dateedit.setMaximumDate(self.day_max)
@@ -567,3 +592,203 @@ def call_db_default(self):
         'The default database has been restored.\n'
         'Please restart AstroTracker for the changes to take effect.'
     )
+
+
+# --- Export Multi Data in .yaml file ---
+def multidata_export(self):
+
+    file_path, _ = QFileDialog.getSaveFileName(
+        self, f'Save YAML File', 'multidata.yaml', 'YAML Files (*.yaml)'
+    )
+    if not file_path:
+        return
+
+    try:
+        # Ensure it ends with .yaml
+        if not file_path.lower().endswith('.yaml'):
+            file_path += '.yaml'
+
+        # Export Data
+        multi_mode = self.selmultidata.currentText()
+        multi_values = get_multi_values(multi_mode=multi_mode, removeduplicates=True, self=self)
+        if multi_mode == 'Multi Days':
+            multi_values = [m.toString(self.qt_date_format) for m in multi_values]
+            multi_values = list(dict.fromkeys(multi_values))
+        if multi_mode == 'Multi Days':
+            multi_mode = f'{multi_mode} ({self.curr_dateformat})'
+        config = {
+            'multi_mode': multi_mode,
+            'items': multi_values
+        }
+        with open(file_path, 'w') as f:
+            yaml.dump(config, f, sort_keys=False)
+        QMessageBox.information(self, 'Success', f'File saved as:\n{file_path}')
+
+    except Exception as e:
+        QMessageBox.critical(self, 'Error', f'Could not save file:\n{str(e)}')
+
+
+# --- Import Multi Data .yaml file ---
+def multidata_import(self):
+
+    file_path, _ = QFileDialog.getOpenFileName(
+        self, 'Open YAML File', '', 'YAML Files (*.yaml)'
+    )
+    if not file_path:
+        return
+
+    # Import Data
+    with open(file_path, 'r') as f:
+        config = yaml.safe_load(f)
+        multi_mode = config['multi_mode']
+        items = config['items']
+        n_items = len(items)
+
+        # Set Multi Type
+        if multi_mode == 'Multi Objects': nidx = 1
+        elif multi_mode == 'Multi Locations': nidx = 2
+        elif multi_mode.startswith('Multi Days'): nidx = 3
+        else: nidx = None # Error
+        self.selmultidata.setCurrentIndex(nidx)
+
+        # Set number of data
+        self.nrows.setValue(n_items)
+
+        # Write Table (Multi Days)
+        if multi_mode.startswith('Multi Days'): # Multi Days
+            fmt_type = multi_mode[12:-1]
+            fmt = self.dateformatslist[fmt_type][0]
+
+            for row in range(n_items):
+                combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+                if combo is not None:
+                    dt = datetime.strptime(items[row], fmt)
+                    y = dt.year
+                    m = dt.month
+                    d = dt.day
+                    qdate = QDate(y, m, d)
+                    self.multitable.cellWidget(row, 0).setDate(qdate)
+
+        # Write Table (Multi Objects or Multi Locations)
+        else:
+
+            # Look for missing Objects / Locations
+            if multi_mode == 'Multi Locations': search_x = self.df_loc.location.tolist()
+            elif multi_mode == 'Multi Objects': search_x = self.ssobj + self.df_stars.star.tolist()
+            items_missing = [i for i in items if i not in list(search_x)]
+            multi_label = multi_mode[6:].lower()
+
+            # Manage missing parts
+            if items_missing:
+                message = (
+                    f'The following {multi_label} are missing:\n' +
+                    'Do you want to add them to the database?' +
+                    ''.join(f'\n- {im}' for im in items_missing)
+                )
+                reply = QMessageBox.question(self, f'Add missing {multi_label}', message,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+
+                if reply != QMessageBox.StandardButton.Yes: # Exclude all missing items
+                    items_exclude = items_missing
+
+                else: # Search for missing items. If found, update the DB. If not, exclide them
+
+                    if multi_mode == 'Multi Locations':
+                        items_exclude = []
+                        for im in items_missing:
+                            lat, lon, time_zone, civil_utc, local_utc, _ = (
+                                myal.get_location_coord(im))
+                            if local_utc != []:
+                                self.df_loc.loc[len(self.df_loc)] = {
+                                    'id': max(self.df_loc.id) + 1,
+                                    'location': im,
+                                    'latitude': lat,
+                                    'longitude': lon,
+                                    'time_zone': time_zone,
+                                    'civil_utc': civil_utc,
+                                    'local_utc': local_utc
+                                }
+                                self.df_loc.sort_values(by='location', inplace=True)
+
+                            else:
+                                items_exclude.append(im)
+
+                        # Warning if some items are not found
+                        if items_exclude:
+                            message = (
+                                f'The following {multi_label} have not been found:\n' +
+                                ''.join(f'\n- {im}' for im in items_exclude)
+                            )
+                            QMessageBox.information(self, f'Missing {multi_label}', message)
+
+                        # Update GUI
+                        self.select_location.clear()
+                        self.select_location.addItems(self.df_loc.location.tolist())
+                        if self.select_location.count() > 0:
+                            self.select_location.setCurrentIndex(0)
+
+                        # Update DB
+                        with sqlite3.connect(self.db_path) as conn:
+                            self.df_loc.to_sql('LOCATIONS', conn, if_exists='replace', index=False)
+                            QMessageBox.information(self, 'Success', 'DB updated')
+
+                    elif multi_mode == 'Multi Objects':
+                        items_exclude = []
+                        for im in items_missing:
+                            vizier_name, ra0, dec0, pm_ra, pm_dec = (
+                                myal.get_star_info(im))
+                            if vizier_name:
+                                self.df_stars.loc[len(self.df_stars)] = {
+                                    'id': max(self.df_stars.id) + 1,
+                                    'star': im,
+                                    'vizier_name': vizier_name,
+                                    'ra0': ra0,
+                                    'dec0': dec0,
+                                    'pm_ra': pm_ra,
+                                    'pm_dec': pm_dec
+                                }
+                                self.df_stars.sort_values(by='star', inplace=True)
+
+                            else:
+                                items_exclude.append(im)
+
+                        # Warning if some items are not found
+                        if items_exclude:
+                            message = (
+                                f'The following {multi_label} have not been found:\n' +
+                                ''.join(f'\n- {im}' for im in items_exclude)
+                            )
+                            QMessageBox.information(self, f'Missing {multi_label}', message)
+
+                        # Update GUI
+                        self.select_object.clear()
+                        self.select_object.addItems(self.ssobj + self.df_stars.star.tolist())
+                        if self.select_object.count() > 0:
+                            self.select_object.setCurrentIndex(0)
+
+                        # Update DB
+                        with sqlite3.connect(self.db_path) as conn:
+                            self.df_stars.to_sql('STARS', conn, if_exists='replace', index=False)
+                            QMessageBox.information(self, 'Success', 'DB updated')
+
+            else:
+                items_exclude= []
+
+            # Add items
+            items_add = [i for i in items if i not in items_exclude]
+            n_items_a = len(items_add)
+            self.nrows.setValue(n_items_a)
+            for row in range(n_items_a):
+                combo = self.multitable.cellWidget(row, 0)  # get the QComboBox
+                if combo is not None:
+                    self.multitable.cellWidget(row, 0).clear()
+                    if multi_mode == 'Multi Locations':
+                        self.multitable.cellWidget(row, 0).addItems(self.df_loc.location.tolist())
+                    elif multi_mode == 'Multi Objects':
+                        self.multitable.cellWidget(row, 0).addItems(self.ssobj + self.df_stars.star.tolist())
+                    self.multitable.cellWidget(row, 0).setCurrentText(items_add[row])
+
+        return
+
+

@@ -19,9 +19,6 @@ CREATE TABLE IF NOT EXISTS "STARS" (
 	"pm_dec"	REAL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
-INSERT INTO "LOCATIONS" ("location","latitude","longitude","time_zone","civil_utc","local_utc") VALUES ('+90.0, 0.0',90.0,0.0,'Etc/GMT',0.0,0.0);
-INSERT INTO "LOCATIONS" ("location","latitude","longitude","time_zone","civil_utc","local_utc") VALUES ('0.0, 0.0',0.0,0.0,'Etc/GMT',0.0,0.0);
-INSERT INTO "LOCATIONS" ("location","latitude","longitude","time_zone","civil_utc","local_utc") VALUES ('-90.0, 0.0',-90.0,0.0,'Pacific/Auckland',12.0,0.0);
 INSERT INTO "LOCATIONS" ("location","latitude","longitude","time_zone","civil_utc","local_utc") VALUES ('Astana, Kazakistan',51.1159933,71.4677059,'Asia/Karachi',5.0,4.7645);
 INSERT INTO "LOCATIONS" ("location","latitude","longitude","time_zone","civil_utc","local_utc") VALUES ('Athens, Greece',37.9755648,23.7348324,'Europe/Athens',2.0,1.5823);
 INSERT INTO "LOCATIONS" ("location","latitude","longitude","time_zone","civil_utc","local_utc") VALUES ('Bangkok, Thailand',13.7524938,100.4935089,'Asia/Jakarta',7.0,6.6996);
