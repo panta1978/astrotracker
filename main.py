@@ -324,6 +324,12 @@ class MainWindow(QMainWindow):
             sidemenu.addWidget(tdelta_widget)
             sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
+            # Auto range set
+            self.fixedanglesteps = QCheckBox('Fixed Angle Steps')
+            self.fixedanglesteps.setFixedWidth(150)
+            self.fixedanglesteps.setChecked(True)
+            sidemenu.addWidget(self.fixedanglesteps)
+
             # Button Styles
             style_button = """
                 QPushButton {
