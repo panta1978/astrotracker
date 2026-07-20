@@ -532,12 +532,14 @@ class MainWindow(QMainWindow):
                 Simbad.add_votable_fields('main_id')
                 self.isonline = True
             except:
+                splash.hide()
                 self.isonline = False
                 QMessageBox.warning(self, 'Offline', 'You are offline. Adding Stars / Locations features disabled')
                 self.star_menu.setEnabled(False)
                 self.loc_menu.setEnabled(False)
 
         except: # Fatal Error, DB restored
+            splash.hide()
             cb.restore_db(self)
             QMessageBox.critical(self, 'Error', 'Problem with Astrotracker DB.<br>Please restart the tool.')
 
