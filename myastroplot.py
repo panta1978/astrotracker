@@ -19,6 +19,9 @@ import plotly.colors as pc
 # --- LAUNCH PLOT (SINGLE) ---
 def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
+    # Axis type
+    is_fixedanglesteps = self.fixedanglesteps.isChecked()
+
     # Define Variables
     if 'Azimuth/Altidude' in plot_type:
         y1 = df_out[f'{curr_obj}_altitude_deg'].copy()
@@ -177,7 +180,10 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             range=[x_gr.min(), x_gr.max()],
             row=1, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 15), title_text=label1, row=1, col=1)
+        self.fig.update_yaxes(range=[-90, 90], title_text=label1, row=1, col=1)
+        if is_fixedanglesteps:
+            self.fig.update_yaxes(tickvals=np.arange(-90, 91, 15), row=1, col=1)
+
 
         # Add lines 2nd ROW
         for position in positions:
@@ -199,7 +205,9 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
             range=[x_gr.min(), x_gr.max()],
             row=2, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
+        self.fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], title_text=label2, row=2, col=1)
+        if is_fixedanglesteps:
+            self.fig.update_yaxes(tickvals=tickvals2, row=2, col=1)
         self.fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 
 
@@ -288,6 +296,9 @@ def makeplot_single(df_out, curr_obj, curr_location, curr_day, plot_type, self):
 
 # --- LAUNCH PLOT (SINGLE) ---
 def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_mode, multi_values, self):
+
+    # Axis type
+    is_fixedanglesteps = self.fixedanglesteps.isChecked()
 
     # Init new structure (that will be filtered)
     df_outspl = {}
@@ -477,7 +488,9 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
             row=1, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[-90, 90], tickvals=np.arange(-90, 91, 15), title_text=label1, row=1, col=1)
+        self.fig.update_yaxes(range=[-90, 90], title_text=label1, row=1, col=1)
+        if is_fixedanglesteps:
+            self.fig.update_yaxes(tickvals=np.arange(-90, 91, 15), row=1, col=1)
 
         # Add lines 2nd ROW
         for nv, multi_value in enumerate(multi_values):
@@ -497,7 +510,9 @@ def makeplot_multi(df_out, curr_obj, curr_location, curr_day, plot_type, multi_m
             range=[x_gr[multi_value].min(), x_gr[multi_value].max()],
             row=2, col=1, tickformat='%H:%M', nticks=20
         )
-        self.fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], tickvals=tickvals2, title_text=label2, row=2, col=1)
+        self.fig.update_yaxes(range=[min(tickvals2), max(tickvals2)], title_text=label2, row=2, col=1)
+        if is_fixedanglesteps:
+            self.fig.update_yaxes(tickvals=tickvals2, row=2, col=1)
         self.fig.update_layout(margin=dict(t=20, b=10, l=50, r=50))
 
 

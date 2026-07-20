@@ -90,7 +90,7 @@ def qt_exception_hook(exctype, value, tb):
         traceback.print_exc()
 
 
-# CLass to safely launch QApplication (exceptions managed)
+# Class to safely launch QApplication (exceptions managed)
 class SafeApplication(QApplication):
     def notify(self, receiver, event):
         try:
@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle('Astrotracker')
             QTimer.singleShot(0, self.showMaximized)
 
-            self.ver = '1.6'
+            self.ver = '1.7'
             self.recalc = True
             self.multimin = 2
             self.multimax = 24
@@ -324,6 +324,12 @@ class MainWindow(QMainWindow):
             sidemenu.addWidget(tdelta_widget)
             sidemenu.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Minimum))
 
+            # Auto range set
+            self.fixedanglesteps = QCheckBox('Fixed Angle Steps')
+            self.fixedanglesteps.setFixedWidth(150)
+            self.fixedanglesteps.setChecked(True)
+            sidemenu.addWidget(self.fixedanglesteps)
+
             # Button Styles
             style_button = """
                 QPushButton {
@@ -526,12 +532,14 @@ class MainWindow(QMainWindow):
                 Simbad.add_votable_fields('main_id')
                 self.isonline = True
             except:
+                splash.hide()
                 self.isonline = False
                 QMessageBox.warning(self, 'Offline', 'You are offline. Adding Stars / Locations features disabled')
                 self.star_menu.setEnabled(False)
                 self.loc_menu.setEnabled(False)
 
         except: # Fatal Error, DB restored
+            splash.hide()
             cb.restore_db(self)
             QMessageBox.critical(self, 'Error', 'Problem with Astrotracker DB.<br>Please restart the tool.')
 
