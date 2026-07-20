@@ -90,7 +90,7 @@ def qt_exception_hook(exctype, value, tb):
         traceback.print_exc()
 
 
-# CLass to safely launch QApplication (exceptions managed)
+# Class to safely launch QApplication (exceptions managed)
 class SafeApplication(QApplication):
     def notify(self, receiver, event):
         try:
@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle('Astrotracker')
             QTimer.singleShot(0, self.showMaximized)
 
-            self.ver = '1.6'
+            self.ver = '1.7'
             self.recalc = True
             self.multimin = 2
             self.multimax = 24
