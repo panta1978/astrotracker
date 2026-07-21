@@ -373,9 +373,9 @@ def export(self, format):
 
     # Default file name
     if format == 'csv':
-        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'
+        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}'.replace('/','_')
     else:
-        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}-{self.curr_graph}'
+        file_name = f'{self.curr_obj}-{self.curr_location}-{self.curr_day}-{self.curr_graph}'.replace('/','_')
 
     format_up = format.upper()
     file_path, _ = QFileDialog.getSaveFileName(
