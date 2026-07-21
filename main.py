@@ -32,7 +32,7 @@ importlib.reload(cb)
 
 # Environment (True for compiled version, False for development)
 IS_FROZEN = getattr(sys, 'frozen', False)
-
+IS_FROZEN = True
 
 # Get Base Path (for both dev and compiled environment)
 def get_base_path() -> str:
@@ -539,7 +539,6 @@ class MainWindow(QMainWindow):
                 self.loc_menu.setEnabled(False)
 
         except: # Fatal Error, DB restored
-            splash.hide()
             cb.restore_db(self)
             QMessageBox.critical(self, 'Error', 'Problem with Astrotracker DB.<br>Please restart the tool.')
 
