@@ -112,7 +112,7 @@ def get_coords(
 
     # Loop through locations
     nl = 0
-    for lat, lon, loc_name, tz_name, civil_utc in zip(lats, lons, loc_names,tz_names, civil_utcs):
+    for lat, lon, loc_name, tz_name, civil_utc in zip(lats, lons, loc_names, tz_names, civil_utcs):
         nl += 1
 
         # Create location
