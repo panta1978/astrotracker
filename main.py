@@ -32,7 +32,6 @@ importlib.reload(cb)
 
 # Environment (True for compiled version, False for development)
 IS_FROZEN = getattr(sys, 'frozen', False)
-IS_FROZEN = True
 
 # Get Base Path (for both dev and compiled environment)
 def get_base_path() -> str:
