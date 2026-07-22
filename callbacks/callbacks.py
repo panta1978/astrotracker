@@ -90,6 +90,13 @@ def init_data(self):
             restore_db(self)
             read_db(self)
 
+    # Sanitise df_stars and df_loc
+    self.df_stars = self.df_stars.drop_duplicates(subset='star', keep='first')
+    self.df_loc = self.df_loc.drop_duplicates(subset='location', keep='first')
+    with sqlite3.connect(self.db_path) as conn:
+        self.df_stars.to_sql('STARS', conn, if_exists='replace', index=False)
+        self.df_loc.to_sql('LOCATIONS', conn, if_exists='replace', index=False)
+
     # Other parameters
     self.ssobj = ['SUN', 'MOON', 'MERCURY', 'VENUS', 'MARS', 'JUPITER', 'SATURN', 'URANUS', 'NEPTUNE']
     self.df_out = []
